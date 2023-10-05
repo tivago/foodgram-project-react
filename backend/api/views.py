@@ -1,31 +1,24 @@
-import io
-
 from django.db.models import Sum
-from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.pdfgen import canvas
+from django.http import HttpResponse
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from recipes.models import (Favorite, Ingredient, Recipe, ShoppingCart,
-                            Subscription, Tag)
+                            Subscription, Tag, IngredientInRecipe)
 from users.models import User
 
 from .filters import IngredientSearchFilter, RecipeFilter
-from .pagination import LimitPageNumberPagination
+from .pagination import CustomPagination
 from .permissions import IsAdminOrReadOnly, IsAuthorOrReadOnly
 from .serializers import (IngredientSerializer, PasswordSerializer,
                           RecipeMinifieldSerializer, RecipePostSerializer,
                           RecipeSerializer, SubscriptionsSerializer,
                           TagSerializer, UserSerializer)
-
-FILENAME = 'my_shopping_cart.pdf'
 
 
 class CreateUserViewSet(UserViewSet):
@@ -33,7 +26,7 @@ class CreateUserViewSet(UserViewSet):
 
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    pagination_class = LimitPageNumberPagination
+    pagination_class = CustomPagination
     http_method_name = (
         'get',
         'post',
@@ -135,7 +128,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     queryset = Recipe.objects.all()
     permission_class = (IsAuthorOrReadOnly,)
-    pagination_classes = LimitPageNumberPagination
+    pagination_classes = CustomPagination
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeFilter
 
@@ -154,44 +147,35 @@ class RecipeViewSet(viewsets.ModelViewSet):
         permission_classes=(IsAuthenticated,),
     )
     def download_shopping_cart(self, request):
-        """Получение списка покупок в формате pdf."""
-        buffer = io.BytesIO()
-        page = canvas.Canvas(buffer)
-        pdfmetrics.registerFont(TTFont('List', 'data/List.ttf'))
-        x_position, y_position = 50, 800
-        shopping_cart = (
-            ShoppingCart.objects.filter(user=request.user)
-            .values(
-                'recipe__ingredients__name',
-                'recipe__ingredients__measurement_unit',
+        user = request.user
+        shopping_cart = user.shopping_cart.all()
+        if not shopping_cart:
+            return Response(
+                "Список покупок пуст.", status=status.HTTP_400_BAD_REQUEST
             )
-            .annotate(amount=Sum('recipe__recipesingredients__amount'))
-            .order_by()
+        ingredients = (
+            IngredientInRecipe.objects.filter(
+                recipe__shopping_cart__user=user
+            )
+            .values("ingredient__name", "ingredient__measurement_unit")
+            .annotate(amount=Sum("amount"))
         )
-        page.setFont('List', 14)
-        if shopping_cart:
-            indent = 20
-            page.drawString(x_position, y_position, 'Cписок покупок:')
-            for index, recipe in enumerate(shopping_cart, start=1):
-                page.drawString(
-                    x_position,
-                    y_position - indent,
-                    f'{index}. {recipe["recipe__ingredients__name"]} - '
-                    f'{recipe["amount"]} '
-                    f'{recipe["recipe__ingredients__measurement_unit"]}.',
-                )
-                y_position -= 15
-                if y_position <= 50:
-                    page.showPage()
-                    y_position = 800
-            page.save()
-            buffer.seek(0)
-            return FileResponse(buffer, as_attachment=True, filename=FILENAME)
-        page.setFont('List', 24)
-        page.drawString(x_position, y_position, 'Cписок покупок пуст!')
-        page.save()
-        buffer.seek(0)
-        return FileResponse(buffer, as_attachment=True, filename=FILENAME)
+
+        response = HttpResponse(
+            self.generate_shopping_file(ingredients, user),
+            content_type="text/plain",
+        )
+        response["Content-Disposition"] = "attachment; filename='shoplist.txt'"
+        return response
+
+    def generate_shopping_file(self, ingredients, user):
+        content = f"Список покупок {user.get_full_name()}:\n\n"
+        for ingredient in ingredients:
+            name = ingredient.get("ingredient__name")
+            units = ingredient.get("ingredient__measurement_unit")
+            amount = ingredient.get("amount")
+            content += f"{name} ({units}) - {amount}\n"
+        return content
 
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):

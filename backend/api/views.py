@@ -1,16 +1,12 @@
 from django.db.models import Sum
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet
-from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-from django.http import HttpResponse
-
-from recipes.models import (Favorite, Ingredient, Recipe, ShoppingCart,
-                            Subscription, Tag, IngredientInRecipe)
-from users.models import User
+from rest_framework import viewsets, status, mixins
 
 from .filters import IngredientSearchFilter, RecipeFilter
 from .pagination import CustomPagination
@@ -19,6 +15,9 @@ from .serializers import (IngredientSerializer, PasswordSerializer,
                           RecipeMinifieldSerializer, RecipePostSerializer,
                           RecipeSerializer, SubscriptionsSerializer,
                           TagSerializer, UserSerializer)
+from recipes.models import (Ingredient, IngredientInRecipe, Favorite, Recipe,
+                            ShoppingCart, Subscription, Tag)
+from users.models import User
 
 
 class CreateUserViewSet(UserViewSet):

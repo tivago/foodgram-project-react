@@ -1,9 +1,9 @@
 from django.db import transaction
 from django.forms import ValidationError
 from drf_extra_fields.fields import Base64ImageField
-from rest_framework import serializers
 from recipes.models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
                             ShoppingCart, Subscription, Tag, TagRecipe)
+from rest_framework import serializers
 from users.models import User
 
 

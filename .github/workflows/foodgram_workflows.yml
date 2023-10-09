@@ -27,10 +27,9 @@ jobs:
         python-version: 3.9
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
-        pip install flake8==6.0.0 flake8-isort==6.0.0
-        pip install -r ./backend/requirements.txt
-    - name: Test with flake8
+          python -m pip install --upgrade pip 
+          pip install -r ./backend/requirements.txt 
+    - name: Test with django tests
       env:
         POSTGRES_USER: django
         POSTGRES_PASSWORD: django

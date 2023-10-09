@@ -45,10 +45,10 @@ jobs:
         pip install -r ./backend/requirements.txt 
     - name: Test with django tests
       env:
-        POSTGRES_USER: foodgram_user
-        POSTGRES_PASSWORD: foodgram_password
-        POSTGRES_DB: foodgram
-        DB_HOST: 127.0.0.1
+        POSTGRES_USER: django
+        POSTGRES_PASSWORD: django
+        POSTGRES_DB: django
+        DB_HOST: db
         DB_PORT: 5432
       run: |
         cd backend/

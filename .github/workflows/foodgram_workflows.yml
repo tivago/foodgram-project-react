@@ -110,7 +110,7 @@ jobs:
         with:
           context: ./infra/
           push: true
-          tags: tivago/foodgram_infra:latest
+          tags: tivago/foodgram_gateway:latest
   deploy:
     runs-on: ubuntu-latest
     needs: 

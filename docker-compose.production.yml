@@ -1,0 +1,45 @@
+version: '3.3'
+
+volumes:
+  static:
+  media:
+  pg_data:
+
+services:
+
+  db:
+    image: postgres:13
+    env_file: .env
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+
+  backend:
+    image: tivago/foodgram-project-react_backend
+    env_file: .env
+    volumes:
+      - static:/static
+      - media:/media
+    depends_on:
+      - db
+
+  frontend:
+    image: tivago/foodgram-project-react_frontend
+    env_file: .env
+    command: cp -r /app/build/. /static/
+    volumes:
+      - /frontend/:/app/result_build
+      - static:/static
+
+  nginx:
+    image: tivago/nginx:1.19.3
+    env_file: .env
+    ports:
+    - 8000:80
+    volumes:
+      - static:/static
+      - media:/media
+      - ./infra/nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./frontend/build:/usr/share/nginx/html/
+      - ./docs/:/usr/share/nginx/html/api/docs/
+    depends_on:
+      - backend

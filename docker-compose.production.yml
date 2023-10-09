@@ -14,7 +14,7 @@ services:
       - pg_data:/var/lib/postgresql/data
 
   backend:
-    build: /backend
+    image: tivago/foodgram-project-react_backend-1
     env_file: .env
     volumes:
       - static:/static
@@ -23,7 +23,7 @@ services:
       - db
 
   frontend:
-    build: /frontend
+    image: tivago/foodgram-project-react_frontend-1
     env_file: .env
     command: cp -r /app/build/. /static/
     volumes:
@@ -31,7 +31,7 @@ services:
       - static:/static
 
   nginx:
-    image: nginx:1.19.3
+    image: tivago/foodgram-project-react-nginx-1
     env_file: .env
     ports:
     - 8000:80

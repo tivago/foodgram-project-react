@@ -140,14 +140,14 @@ USE_I18N = True
 
 USE_TZ = True
 
-STATIC_URL = '/backend_static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'backend_static/static'
 
-MEDIA_URL = '/backend_media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / '/media'
 
-DATA_FILES_DIR = os.path.join(BASE_DIR, 'data')
-FONTS_FILES_DIR = os.path.join(DATA_FILES_DIR, 'HelveticaRegular.ttf')
+CORS_ORIGIN_ALLOW_ALL = True
+CORS_URLS_REGEX = r'^/api/.*$'
 
 AUTH_USER_MODEL = 'users.User'
 

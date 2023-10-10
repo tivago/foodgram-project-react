@@ -11,12 +11,8 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'some_key321')
 
 DEBUG = True
 
-CSRF_TRUSTED_ORIGINS = ['https://meowtube.ddns.net']
-
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '127.0.0.1 localhost').split()
 
-
-# Application definition
 
 INSTALLED_APPS = [
     'api.apps.ApiConfig',

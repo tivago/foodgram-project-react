@@ -140,41 +140,40 @@ class RecipeViewSet(viewsets.ModelViewSet):
         else:
             return RecipePostSerializer
 
-    @action(
-        url_path='download_shopping_cart',
-        detail=False,
-        permission_classes=(IsAuthenticated,),
-    )
-    def download_shopping_cart(self, request):
-        user = request.user
-        shopping_cart = user.shopping_cart.all()
-        if not shopping_cart:
-            return Response(
-                "Список покупок пуст.", status=status.HTTP_400_BAD_REQUEST
+    @staticmethod
+    def save_file(list_for_print):
+        """Сохранение списка покупок в файл."""
+        list_name = 'Список покупок:\n\n'
+        for ingredient in list_for_print:
+            list_name += (
+                f'{ingredient["recipe__ingredients__name"]} - '
+                f'{ingredient["amount"]} '
+                f'{ingredient["recipe__ingredients__measurement_unit"]}\n'
             )
-        ingredients = (
-            IngredientInRecipe.objects.filter(
-                recipe__shopping_cart__user=user
-            )
-            .values("ingredient__name", "ingredient__measurement_unit")
-            .annotate(amount=Sum("amount"))
+        response = HttpResponse(list_name, content_type='text/plain')
+        response['Content-Disposition'] = (
+            'attachment; filename=shopping_list.txt'
         )
-
-        response = HttpResponse(
-            self.generate_shopping_file(ingredients, user),
-            content_type="text/plain",
-        )
-        response["Content-Disposition"] = "attachment; filename='shoplist.txt'"
         return response
 
-    def generate_shopping_file(self, ingredients, user):
-        content = f"Список покупок {user.get_full_name()}:\n\n"
-        for ingredient in ingredients:
-            name = ingredient.get("ingredient__name")
-            units = ingredient.get("ingredient__measurement_unit")
-            amount = ingredient.get("amount")
-            content += f"{name} ({units}) - {amount}\n"
-        return content
+    @action(
+        detail=False,
+        methods=('get',),
+        permission_classes=(IsAuthenticated, )
+    )
+    def download_shopping_cart(self, request):
+        """Скачать список покупок."""
+        shopping_cart = ShoppingCart.objects.filter(user=self.request.user)
+        recipes = [item.recipe.id for item in shopping_cart]
+        shopping_list = IngredientInRecipe.objects.filter(
+            recipe__in=recipes
+        ).values(
+            'ingredient__name',
+            'ingredient__measurement_unit'
+        ).order_by(
+            'ingredient__name'
+        ).annotate(amount=Sum('amount'))
+        return self.save_file(shopping_list)
 
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):

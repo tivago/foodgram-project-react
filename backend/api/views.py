@@ -3,10 +3,13 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet
+from recipes.models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
+                            ShoppingCart, Subscription, Tag)
+from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-from rest_framework import viewsets, status, mixins
+from users.models import User
 
 from .filters import IngredientSearchFilter, RecipeFilter
 from .pagination import CustomPagination
@@ -15,9 +18,6 @@ from .serializers import (IngredientSerializer, PasswordSerializer,
                           RecipeMinifieldSerializer, RecipePostSerializer,
                           RecipeSerializer, SubscriptionsSerializer,
                           TagSerializer, UserSerializer)
-from recipes.models import (Ingredient, IngredientInRecipe, Favorite, Recipe,
-                            ShoppingCart, Subscription, Tag)
-from users.models import User
 
 
 class CreateUserViewSet(UserViewSet):
@@ -140,40 +140,30 @@ class RecipeViewSet(viewsets.ModelViewSet):
         else:
             return RecipePostSerializer
 
-    @staticmethod
-    def save_file(list_for_print):
-        """Сохранение списка покупок в файл."""
-        list_name = 'Список покупок:\n\n'
-        for ingredient in list_for_print:
-            list_name += (
-                f'{ingredient["recipe__ingredients__name"]} - '
-                f'{ingredient["amount"]} '
-                f'{ingredient["recipe__ingredients__measurement_unit"]}\n'
-            )
-        response = HttpResponse(list_name, content_type='text/plain')
-        response['Content-Disposition'] = (
-            'attachment; filename=shopping_list.txt'
-        )
-        return response
-
     @action(
         detail=False,
         methods=('get',),
         permission_classes=(IsAuthenticated, )
     )
     def download_shopping_cart(self, request):
-        """Скачать список покупок."""
-        shopping_cart = ShoppingCart.objects.filter(user=self.request.user)
-        recipes = [item.recipe.id for item in shopping_cart]
-        shopping_list = IngredientInRecipe.objects.filter(
-            recipe__in=recipes
-        ).values(
-            'ingredient__name',
-            'ingredient__measurement_unit'
-        ).order_by(
-            'ingredient__name'
-        ).annotate(amount=Sum('amount'))
-        return self.save_file(shopping_list)
+        """Метод для просмотра списка покупок."""
+        items = IngredientInRecipe.objects.select_related(
+            'recipe', 'ingredient'
+        )
+        items = items.filter(recipe__shopping_carts__user=request.user).all()
+        shopping_cart = items.values(
+            'ingredient__name', 'ingredient__measurement_unit'
+        ).annotate(
+            total=Sum('amount')
+        ).order_by('-total')
+        text = '\n'.join(
+            [f"{item.get('name')} ({item.get('units')}) - {item.get('total')}"
+             for item in shopping_cart]
+        )
+        filename = 'foodgram_shopping_cart.txt'
+        response = HttpResponse(text, content_type='text/plan')
+        response['Content-Disposition'] = f'attachment; filename={filename}'
+        return response
 
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):

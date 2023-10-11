@@ -1,19 +1,29 @@
-import csv
+import json
+import os
 
 from django.core.management.base import BaseCommand
-from foodgram.settings import CSV_DIR
+from foodgram.settings import DATA_FILES_DIR
 from recipes.models import Ingredient
 
 
 class Command(BaseCommand):
-    """Чтение файла CSV и создания экземпляров модели"""
+    """Загрузчик в БД из JSON файла."""
 
     def handle(self, *args, **options):
-        with open(
-            f'{CSV_DIR}/ingredients.csv',
-            encoding='utf-8'
-        ) as file:
-            reader = csv.DictReader(file)
-            Ingredient.objects.bulk_create(
-                Ingredient(**data) for data in reader
-            )
+        file_name = 'ingredients.json'
+        json_path = os.path.join(DATA_FILES_DIR, file_name)
+        try:
+            with open(json_path, 'rb') as file:
+                data = json.load(file)
+                ingredients = [
+                    Ingredient(
+                        name=item.get('name'),
+                        measurement_unit=item.get('measurement_unit'),
+                    )
+                    for item in data
+                ]
+                Ingredient.objects.bulk_create(ingredients)
+            print('finished')
+        except FileNotFoundError:
+            print(f'Файл {file_name} не найден.')
+            return

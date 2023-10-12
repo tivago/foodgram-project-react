@@ -150,7 +150,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
             ShoppingCart.objects.filter(user=request.user)
             .values(
                 'recipe__recipesingredients',
-                'recipe__recipesingredients__measurement_unit',
             )
             .annotate(amount=Sum('recipe__recipesingredients__amount'))
             .order_by()
@@ -160,7 +159,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             page.append(
                 f'{index}. {recipe["recipe__recipesingredients"]} - '
                 f'{recipe["amount"]} '
-                f'{recipe["recipe__recipesingredients__measurement_unit"]}.',
+                f'{recipe["recipe__recipesingredients"]}.',
             )
         response = HttpResponse(page, content_type='text/csv')
         response['Content-Disposition'] = (

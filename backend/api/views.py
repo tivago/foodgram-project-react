@@ -140,6 +140,16 @@ class RecipeViewSet(viewsets.ModelViewSet):
         else:
             return RecipePostSerializer
 
+
+class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
+    """Вьюсет для ингредиентов."""
+
+    queryset = Ingredient.objects.all()
+    serializer_class = IngredientSerializer
+    permission_classes = (AllowAny,)
+    pagination_class = None
+    filterset_class = IngredientSearchFilter
+
     @action(
         detail=False,
         methods=['GET'],
@@ -162,16 +172,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
             ))
         response = FileResponse(pretty_ings, content_type='text/plain')
         return response
-
-
-class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
-    """Вьюсет для ингредиентов."""
-
-    queryset = Ingredient.objects.all()
-    serializer_class = IngredientSerializer
-    permission_classes = (AllowAny,)
-    pagination_class = None
-    filterset_class = IngredientSearchFilter
 
 
 class FavoriteViewSet(

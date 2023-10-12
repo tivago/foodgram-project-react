@@ -84,6 +84,13 @@ class Recipe(Model):
         through='TagRecipe',
         verbose_name='Тег рецепта',
     )
+    ingredients = models.ManyToManyField(
+        Ingredient,
+        through='IngredientInRecipe',
+        related_name='recipes',
+        verbose_name='Необходимые ингредиенты',
+        help_text='Выберете необходимые ингредиенты',
+    )
     pub_date = models.DateTimeField(
         auto_now_add=True,
         verbose_name='Дата создания рецепта',

@@ -1,5 +1,5 @@
 from django.db.models import Sum
-from django.http import FileResponse
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet
@@ -126,7 +126,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     """Вьюсет для рецептов."""
 
     queryset = Recipe.objects.all()
-    permission_class = (IsAuthorOrReadOnly,)
+    permission_class = (IsAuthorOrReadOnly, IsAuthenticated,)
     pagination_classes = CustomPagination
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeFilter
@@ -140,6 +140,62 @@ class RecipeViewSet(viewsets.ModelViewSet):
         else:
             return RecipePostSerializer
 
+    def create(self, request, recipe_id):
+        recipe = get_object_or_404(Recipe, pk=recipe_id)
+        if ShoppingCart.objects.filter(
+            user=request.user, recipe=recipe
+        ).exists():
+            return Response(
+                data={'detail': 'Рецепт уже есть в списке покупок!'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        ShoppingCart.objects.create(user=request.user, recipe=recipe)
+        serializer = self.get_serializer(recipe)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def delete(self, request, recipe_id):
+        user = request.user
+        recipe = get_object_or_404(Recipe, pk=recipe_id)
+        cart = ShoppingCart.objects.filter(user=user, recipe=recipe)
+        if not cart.exists():
+            return Response(
+                data={'detail': 'Рецепта еще нет в списке покупок!'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        cart.delete()
+        return Response(
+            f'Рецепт {cart} удален из списка покупок у пользователя'
+            f' {request.user}',
+            status=status.HTTP_204_NO_CONTENT,
+        )
+
+    @action(
+        detail=False,
+        methods=['GET'],
+        permission_classes=[IsAuthenticated]
+    )
+    def download_shopping_cart(self, request):
+        ingredients = IngredientInRecipe.objects.filter(
+            recipe__shopping_cart__user=request.user).values(
+                'ingredient__name', 'ingredient__measurement_unit').annotate(
+                    amount=Sum('amount')
+        )
+        shop_string = (
+            'Ингредиенты к покупке:\n\n')
+        shop_string += '\n'.join([
+            f'- {ingredient["ingredient__name"]}, '
+            f'{ingredient["ingredient__measurement_unit"]}: '
+            f'{ingredient["amount"]}'
+            for ingredient in ingredients
+        ])
+        response = HttpResponse(
+            shop_string,
+            content_type='text/plain, charset=utf8'
+        )
+        response['Content-Disposition'] = 'attachment; '
+        'filename="shopping_list.txt"'
+        return response
+
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     """Вьюсет для ингредиентов."""
@@ -149,29 +205,6 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = (AllowAny,)
     pagination_class = None
     filterset_class = IngredientSearchFilter
-
-    @action(
-        detail=False,
-        methods=['GET'],
-        url_path='download_shopping_cart',
-        url_name='download_shopping_cart',
-        permission_classes=(AllowAny,)
-    )
-    def download_shopping_cart(self, request):
-        ingredients = (IngredientInRecipe.objects.filter(
-            recipe__shopping_carts__user=request.user).values(
-            'ingredient__name',
-            'ingredient__measurement_unit',
-        ).annotate(amount=Sum('amount')))
-        pretty_ings = []
-        for ingredient in ingredients:
-            pretty_ings.append('{name} - {amount} {m_unit}\n'.format(
-                name=ingredient.get('ingredient__name'),
-                amount=ingredient.get('amount'),
-                m_unit=ingredient.get('ingredient__measurement_unit')
-            ))
-        response = FileResponse(pretty_ings, content_type='text/plain')
-        return response
 
 
 class FavoriteViewSet(
@@ -206,47 +239,6 @@ class FavoriteViewSet(
         favorite.delete()
         return Response(
             f'Рецепт {favorite} удален из избранного у пользователя'
-            f' {request.user}',
-            status=status.HTTP_204_NO_CONTENT,
-        )
-
-
-class ShoppingCartViewSet(viewsets.ModelViewSet):
-    """Вьюсет для списка покупок."""
-
-    queryset = Recipe.objects.all()
-    serializer_class = RecipeMinifieldSerializer
-    permission_classes = (
-        IsAdminOrReadOnly,
-        IsAuthorOrReadOnly,
-        IsAuthenticated,
-    )
-
-    def create(self, request, recipe_id):
-        recipe = get_object_or_404(Recipe, pk=recipe_id)
-        if ShoppingCart.objects.filter(
-            user=request.user, recipe=recipe
-        ).exists():
-            return Response(
-                data={'detail': 'Рецепт уже есть в списке покупок!'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        ShoppingCart.objects.create(user=request.user, recipe=recipe)
-        serializer = self.get_serializer(recipe)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-    def delete(self, request, recipe_id):
-        user = request.user
-        recipe = get_object_or_404(Recipe, pk=recipe_id)
-        cart = ShoppingCart.objects.filter(user=user, recipe=recipe)
-        if not cart.exists():
-            return Response(
-                data={'detail': 'Рецепта еще нет в списке покупок!'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        cart.delete()
-        return Response(
-            f'Рецепт {cart} удален из списка покупок у пользователя'
             f' {request.user}',
             status=status.HTTP_204_NO_CONTENT,
         )

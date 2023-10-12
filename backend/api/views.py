@@ -1,5 +1,5 @@
 from django.db.models import Sum
-from django.http import HttpResponse
+from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet
@@ -142,27 +142,25 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     @action(
         detail=False,
-        methods=('get',),
-        permission_classes=(IsAuthenticated, )
+        methods=['GET'],
+        url_path='download_shopping_cart',
+        url_name='download_shopping_cart',
+        permission_classes=(IsAuthenticated,),
     )
     def download_shopping_cart(self, request):
-        """Метод для просмотра списка покупок."""
-        items = IngredientInRecipe.objects.select_related(
-            'recipe', 'ingredient'
-        )
-        items = items.filter(recipe__shopping_carts__user=request.user).all()
-        shopping_cart = items.values(
-            'ingredient__name', 'ingredient__measurement_unit'
-        ).annotate(
-            total=Sum('amount')
-        ).order_by('-total')
-        text = '\n'.join(
-            [f"{item.get('name')} ({item.get('units')}) - {item.get('total')}"
-             for item in shopping_cart]
-        )
-        filename = 'foodgram_shopping_cart.txt'
-        response = HttpResponse(text, content_type='text/plan')
-        response['Content-Disposition'] = f'attachment; filename={filename}'
+        ingredients = (IngredientInRecipe.objects.filter(
+            recipe__shopping_carts__user=request.user).values(
+            'ingredient__name',
+            'ingredient__measurement_unit',
+        ).annotate(amount=Sum('amount')))
+        pretty_ings = []
+        for ingredient in ingredients:
+            pretty_ings.append('{name} - {amount} {m_unit}\n'.format(
+                name=ingredient.get('ingredient__name'),
+                amount=ingredient.get('amount'),
+                m_unit=ingredient.get('ingredient__measurement_unit')
+            ))
+        response = FileResponse(pretty_ings, content_type='text/plain')
         return response
 
 

@@ -1,14 +1,9 @@
-import io
-
 from django.db.models import Sum
-from django.http import FileResponse
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.pdfgen import canvas
-from recipes.models import (Favorite, Ingredient, Recipe,
+from recipes.models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
                             ShoppingCart, Subscription, Tag)
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
@@ -20,10 +15,9 @@ from .filters import IngredientSearchFilter, RecipeFilter
 from .pagination import CustomPagination
 from .permissions import IsAdminOrReadOnly, IsAuthorOrReadOnly
 from .serializers import (IngredientSerializer, PasswordSerializer,
-                          RecipeMinifieldSerializer, SubscriptionsSerializer,
+                          RecipeMinifieldSerializer, RecipePostSerializer,
+                          RecipeSerializer, SubscriptionsSerializer,
                           TagSerializer, UserSerializer)
-
-FILENAME = 'shoppingcart.pdf'
 
 
 class CreateUserViewSet(UserViewSet):
@@ -140,45 +134,36 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
 
-    def download_shopping_cart(self, request):
-        """Качаем список с ингредиентами."""
+    def get_serializer_class(self):
+        if self.request.method == 'GET':
+            return RecipeSerializer
+        else:
+            return RecipePostSerializer
 
-        buffer = io.BytesIO()
-        page = canvas.Canvas(buffer)
-        pdfmetrics.registerFont(TTFont('Vera', 'Vera.ttf'))
-        x_position, y_position = 50, 800
-        shopping_cart = (
-            request.user.shopping_cart.recipe.
-            values(
-                'ingredients__name',
-                'ingredients__measurement_unit'
-            ).annotate(amount=Sum('recipe__amount')).order_by())
-        page.setFont('Vera', 14)
-        if shopping_cart:
-            indent = 20
-            page.drawString(x_position, y_position, 'Cписок покупок:')
-            for index, recipe in enumerate(shopping_cart, start=1):
-                page.drawString(
-                    x_position, y_position - indent,
-                    f'{index}. {recipe["ingredients__name"]} - '
-                    f'{recipe["amount"]} '
-                    f'{recipe["ingredients__measurement_unit"]}.')
-                y_position -= 15
-                if y_position <= 50:
-                    page.showPage()
-                    y_position = 800
-            page.save()
-            buffer.seek(0)
-            return FileResponse(
-                buffer, as_attachment=True, filename=FILENAME)
-        page.setFont('Vera', 24)
-        page.drawString(
-            x_position,
-            y_position,
-            'Cписок покупок пуст!')
-        page.save()
-        buffer.seek(0)
-        return FileResponse(buffer, as_attachment=True, filename=FILENAME)
+    @action(
+        detail=False,
+        methods=('get',),
+        permission_classes=(IsAuthenticated, )
+    )
+    def download_shopping_cart(self, request):
+        """Метод для просмотра списка покупок."""
+        items = IngredientInRecipe.objects.select_related(
+            'recipe', 'ingredient'
+        )
+        items = items.filter(recipe__shopping_carts__user=request.user).all()
+        shopping_cart = items.values(
+            'ingredient__name', 'ingredient__measurement_unit'
+        ).annotate(
+            total=Sum('amount')
+        ).order_by('-total')
+        text = '\n'.join(
+            [f"{item.get('name')} ({item.get('units')}) - {item.get('total')}"
+             for item in shopping_cart]
+        )
+        filename = 'foodgram_shopping_cart.txt'
+        response = HttpResponse(text, content_type='text/plan')
+        response['Content-Disposition'] = f'attachment; filename={filename}'
+        return response
 
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):

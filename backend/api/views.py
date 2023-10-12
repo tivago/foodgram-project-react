@@ -145,7 +145,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         methods=['GET'],
         url_path='download_shopping_cart',
         url_name='download_shopping_cart',
-        permission_classes = (AllowAny,)
+        permission_classes=(AllowAny,)
     )
     def download_shopping_cart(self, request):
         ingredients = (IngredientInRecipe.objects.filter(

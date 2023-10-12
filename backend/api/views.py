@@ -126,7 +126,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     """Вьюсет для рецептов."""
 
     queryset = Recipe.objects.all()
-    permission_class = (IsAuthorOrReadOnly, IsAuthenticated,)
+    permission_class = (IsAuthorOrReadOnly,)
     pagination_classes = CustomPagination
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeFilter
@@ -139,35 +139,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return RecipeSerializer
         else:
             return RecipePostSerializer
-
-    def create(self, request, recipe_id):
-        recipe = get_object_or_404(Recipe, pk=recipe_id)
-        if ShoppingCart.objects.filter(
-            user=request.user, recipe=recipe
-        ).exists():
-            return Response(
-                data={'detail': 'Рецепт уже есть в списке покупок!'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        ShoppingCart.objects.create(user=request.user, recipe=recipe)
-        serializer = self.get_serializer(recipe)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-    def delete(self, request, recipe_id):
-        user = request.user
-        recipe = get_object_or_404(Recipe, pk=recipe_id)
-        cart = ShoppingCart.objects.filter(user=user, recipe=recipe)
-        if not cart.exists():
-            return Response(
-                data={'detail': 'Рецепта еще нет в списке покупок!'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        cart.delete()
-        return Response(
-            f'Рецепт {cart} удален из списка покупок у пользователя'
-            f' {request.user}',
-            status=status.HTTP_204_NO_CONTENT,
-        )
 
     @action(
         detail=False,
@@ -239,6 +210,47 @@ class FavoriteViewSet(
         favorite.delete()
         return Response(
             f'Рецепт {favorite} удален из избранного у пользователя'
+            f' {request.user}',
+            status=status.HTTP_204_NO_CONTENT,
+        )
+
+
+class ShoppingCartViewSet(viewsets.ModelViewSet):
+    """Вьюсет для списка покупок."""
+
+    queryset = Recipe.objects.all()
+    serializer_class = RecipeMinifieldSerializer
+    permission_classes = (
+        IsAdminOrReadOnly,
+        IsAuthorOrReadOnly,
+        IsAuthenticated,
+    )
+
+    def create(self, request, recipe_id):
+        recipe = get_object_or_404(Recipe, pk=recipe_id)
+        if ShoppingCart.objects.filter(
+            user=request.user, recipe=recipe
+        ).exists():
+            return Response(
+                data={'detail': 'Рецепт уже есть в списке покупок!'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        ShoppingCart.objects.create(user=request.user, recipe=recipe)
+        serializer = self.get_serializer(recipe)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def delete(self, request, recipe_id):
+        user = request.user
+        recipe = get_object_or_404(Recipe, pk=recipe_id)
+        cart = ShoppingCart.objects.filter(user=user, recipe=recipe)
+        if not cart.exists():
+            return Response(
+                data={'detail': 'Рецепта еще нет в списке покупок!'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        cart.delete()
+        return Response(
+            f'Рецепт {cart} удален из списка покупок у пользователя'
             f' {request.user}',
             status=status.HTTP_204_NO_CONTENT,
         )

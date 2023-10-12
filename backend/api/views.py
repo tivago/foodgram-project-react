@@ -12,7 +12,7 @@ from rest_framework.response import Response
 from users.models import User
 
 from .filters import IngredientSearchFilter, RecipeFilter
-from .pagination import CustomPagination
+from .pagination import LimitPageNumberPagination
 from .permissions import IsAdminOrReadOnly, IsAuthorOrReadOnly
 from .serializers import (IngredientSerializer, PasswordSerializer,
                           RecipeMinifieldSerializer, RecipePostSerializer,
@@ -25,7 +25,7 @@ class CreateUserViewSet(UserViewSet):
 
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    pagination_class = CustomPagination
+    pagination_class = LimitPageNumberPagination
     http_method_name = (
         'get',
         'post',
@@ -127,7 +127,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     queryset = Recipe.objects.all()
     permission_class = (IsAuthorOrReadOnly,)
-    pagination_classes = CustomPagination
+    pagination_classes = LimitPageNumberPagination
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeFilter
 

@@ -149,8 +149,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
         shopping_cart = (
             ShoppingCart.objects.filter(user=request.user)
             .values(
-                'recipe__ingredients__name',
-                'recipe__ingredients__measurement_unit',
+                'recipe__recipesingredients__name',
+                'recipe__recipesingredients__measurement_unit',
             )
             .annotate(amount=Sum('recipe__recipesingredients__amount'))
             .order_by()
@@ -158,9 +158,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
         page = ['Список покупок:\n--------------']
         for index, recipe in enumerate(shopping_cart, start=1):
             page.append(
-                f'{index}. {recipe["recipe__ingredients__name"]} - '
+                f'{index}. {recipe["recipe__recipesingredients__name"]} - '
                 f'{recipe["amount"]} '
-                f'{recipe["recipe__ingredients__measurement_unit"]}.',
+                f'{recipe["recipe__recipesingredients__measurement_unit"]}.',
             )
         response = HttpResponse(page, content_type='text/csv')
         response['Content-Disposition'] = (

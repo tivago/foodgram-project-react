@@ -143,28 +143,26 @@ class RecipeViewSet(viewsets.ModelViewSet):
     @action(
         detail=False,
         methods=['GET'],
-        permission_classes=[IsAuthenticated]
+        permission_classes=(IsAuthenticated,)
     )
     def download_shopping_cart(self, request):
         ingredients = IngredientInRecipe.objects.filter(
-            recipe__shopping_cart__user=request.user).values(
-                'ingredient__name', 'ingredient__measurement_unit').annotate(
-                    amount=Sum('amount')
+            recipe__shopping_cart__user=request.user.id
+        ).values(
+            'recipe__ingredients__name',
+            'recipe__ingredients__measurement_unit'
+        ).annotate(amount=Sum('recipe__recipesingredients__amount'))
+        shopping_cart = ['Список покупок:\n--------------']
+        for position, ingredient in enumerate(ingredients, start=1):
+            shopping_cart.append(
+                f'\n{position}. {ingredient["recipe__ingredients__name"]}:'
+                f' {ingredient["amount_sum"]}'
+                f'({ingredient["recipe__ingredients__measurement_unit"]})'
+            )
+        response = HttpResponse(shopping_cart, content_type='text/csv')
+        response['Content-Disposition'] = (
+            'attachment;filename=shopping_cart.csv'
         )
-        shop_string = (
-            'Ингредиенты к покупке:\n\n')
-        shop_string += '\n'.join([
-            f'- {ingredient["ingredient__name"]}, '
-            f'{ingredient["ingredient__measurement_unit"]}: '
-            f'{ingredient["amount"]}'
-            for ingredient in ingredients
-        ])
-        response = HttpResponse(
-            shop_string,
-            content_type='text/plain, charset=utf8'
-        )
-        response['Content-Disposition'] = 'attachment; '
-        'filename="shopping_list.txt"'
         return response
 
 

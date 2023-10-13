@@ -1,4 +1,5 @@
-from django.core.validators import MinValueValidator
+from colorfield.fields import ColorField
+from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 from django.contrib.auth import get_user_model
 from django.db.models import (
@@ -6,7 +7,9 @@ from django.db.models import (
     Model,
 )
 MINIMAL_INGREDIENST_AMOUNT = 1
+MAX_INGREDIENTS_AMOUNT = 50
 MINIMAL_COOKING_TIME = 1
+MAX_COOCKING_TIME = 420
 
 User = get_user_model()
 
@@ -19,8 +22,15 @@ class Tag(Model):
         verbose_name='Название',
         help_text='Введите название тега',
     )
-    color = CharField('Цвет тега', max_length=7)
-    slug = CharField('Слаг', max_length=200)
+    color = ColorField(
+        default='#FF0000',
+        max_length=200,
+        verbose_name='Цвет тега',
+        unique=True,)
+    slug = CharField(
+        max_length=200,
+        unique=True,
+        verbose_name='Слаг')
 
     class Meta:
         verbose_name = 'Тег'
@@ -46,6 +56,11 @@ class Ingredient(Model):
         verbose_name = 'Ингредиент'
         verbose_name_plural = 'Ингредиенты'
         ordering = ('name',)
+        constraints = [
+            models.UniqueConstraint(
+                fields=['name', 'measurement_unit'], name='unique_ingredient'
+            )
+        ]
 
     def __str__(self) -> str:
         return f'{self.name}, {self.measurement_unit}'
@@ -70,12 +85,16 @@ class Recipe(Model):
     text = models.TextField(
         verbose_name='Описание рецепта',
     )
-    cooking_time = models.PositiveIntegerField(
+    cooking_time = models.PositiveSmallIntegerField(
         verbose_name='Время приготовления (в минутах)',
         validators=[
             MinValueValidator(
                 MINIMAL_COOKING_TIME,
                 f'минимальное время приготовления {MINIMAL_COOKING_TIME} мин.',
+            ),
+            MaxValueValidator(
+                MAX_COOCKING_TIME,
+                f'максимальное время приготовления {MAX_COOCKING_TIME} мин.',
             )
         ],
     )
@@ -155,6 +174,10 @@ class IngredientInRecipe(models.Model):
             MinValueValidator(
                 MINIMAL_INGREDIENST_AMOUNT,
                 f'укажите количество не менее {MINIMAL_INGREDIENST_AMOUNT}',
+            ),
+            MaxValueValidator(
+                MAX_INGREDIENTS_AMOUNT,
+                f'слишком много ингредиентов {MAX_INGREDIENTS_AMOUNT}',
             )
         ],
     )
@@ -203,46 +226,6 @@ class Favorite(models.Model):
         return f'{self.user} - {self.recipe}'
 
 
-class Subscription(models.Model):
-    """Модель подписок."""
-
-    user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='follower',
-        verbose_name='Подписчик',
-    )
-    author = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='following',
-        verbose_name='Избранный автор',
-    )
-    created = models.DateTimeField(
-        db_index=True,
-        verbose_name='Дата создания',
-        auto_now_add=True
-    )
-
-    class Meta:
-        ordering = ('-created',)
-        verbose_name = 'Подписка'
-        verbose_name_plural = 'Подписки'
-        constraints = [
-            models.UniqueConstraint(
-                fields=['user', 'author'],
-                name='unique_relationships',
-            ),
-            models.CheckConstraint(
-                name='prevent_self_follow',
-                check=~models.Q(user=models.F('author')),
-            ),
-        ]
-
-    def __str__(self) -> str:
-        return f'{self.user} подписан(а) на {self.author}'
-
-
 class ShoppingCart(models.Model):
     """Модель корзины."""
 
@@ -257,15 +240,11 @@ class ShoppingCart(models.Model):
         related_name='shoppingcart',
         verbose_name='Рецепт в списке покупок',
     )
-    add_date = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name='Дата добавления',
-    )
 
     class Meta:
         verbose_name = 'Список покупок'
         verbose_name_plural = 'Списки покупок'
-        ordering = ('-add_date',)
+        ordering = ('-user',)
         constraints = [
             models.UniqueConstraint(
                 fields=['user', 'recipe'], name='unique_shopping_cart'

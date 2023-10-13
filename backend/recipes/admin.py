@@ -1,7 +1,8 @@
 from django.contrib import admin
 
+from users.models import (Subscription, )
 from .models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
-                     ShoppingCart, Subscription, Tag, TagRecipe)
+                     ShoppingCart, Tag, TagRecipe)
 
 
 class IngredientInRecipeInline(admin.TabularInline):
@@ -9,6 +10,7 @@ class IngredientInRecipeInline(admin.TabularInline):
 
     model = IngredientInRecipe
     extra = 1
+    min_num = 1
 
 
 class TagRecipeInline(admin.TabularInline):
@@ -16,8 +18,10 @@ class TagRecipeInline(admin.TabularInline):
 
     model = TagRecipe
     extra = 1
+    min_num = 1
 
 
+@admin.register(Ingredient)
 class IngredientAdmin(admin.ModelAdmin):
     """Админка ингредиента."""
 
@@ -26,6 +30,7 @@ class IngredientAdmin(admin.ModelAdmin):
     search_fields = ('name',)
 
 
+@admin.register(Tag)
 class TagAdmin(admin.ModelAdmin):
     """Админка тегов."""
 
@@ -34,6 +39,7 @@ class TagAdmin(admin.ModelAdmin):
     search_fields = ('name',)
 
 
+@admin.register(Recipe)
 class RecipeAdmin(admin.ModelAdmin):
     """Админка рецептов."""
 
@@ -43,13 +49,13 @@ class RecipeAdmin(admin.ModelAdmin):
     list_filter = ('name', 'author', 'tags')
     empty_value_display = '-пусто-'
 
-    def count_favorite(self, obj):
+    @admin.display(description='Количество добавлений в избранное')
+    def count_favorite(self, recipe):
         """Метод подсчета общего числа добавлений этого рецепта в избранное."""
-        return Favorite.objects.filter(recipe=obj).count()
-
-    count_favorite.short_description = 'Количество добавлений в избранное'
+        return recipe.favorites.count()
 
 
+@admin.register(Favorite)
 class FavoriteAdmin(admin.ModelAdmin):
     """Админка списка избранного."""
 
@@ -59,6 +65,7 @@ class FavoriteAdmin(admin.ModelAdmin):
     empty_value_display = '-пусто-'
 
 
+@admin.register(Subscription)
 class SubscriptionAdmin(admin.ModelAdmin):
     """Админка подписок."""
 
@@ -67,6 +74,7 @@ class SubscriptionAdmin(admin.ModelAdmin):
     search_fields = ('user',)
 
 
+@admin.register(ShoppingCart)
 class ShoppingCartAdmin(admin.ModelAdmin):
     """Админка списка покупок."""
 
@@ -74,11 +82,3 @@ class ShoppingCartAdmin(admin.ModelAdmin):
     search_fields = ('user',)
     list_filter = ('user',)
     empty_value_display = '-пусто-'
-
-
-admin.site.register(Ingredient, IngredientAdmin)
-admin.site.register(Tag, TagAdmin)
-admin.site.register(Recipe, RecipeAdmin)
-admin.site.register(Favorite, FavoriteAdmin)
-admin.site.register(Subscription, SubscriptionAdmin)
-admin.site.register(ShoppingCart, ShoppingCartAdmin)

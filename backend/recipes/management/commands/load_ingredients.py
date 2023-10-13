@@ -2,6 +2,7 @@ import json
 import os
 
 from django.core.management.base import BaseCommand
+
 from foodgram.settings import DATA_FILES_DIR
 from recipes.models import Ingredient
 
@@ -22,7 +23,7 @@ class Command(BaseCommand):
                     )
                     for item in data
                 ]
-                Ingredient.objects.bulk_create(ingredients)
+                Ingredient.objects.get_or_create(ingredients)
             print('finished')
         except FileNotFoundError:
             print(f'Файл {file_name} не найден.')

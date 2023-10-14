@@ -2,7 +2,7 @@ from django.db import transaction
 from django.forms import ValidationError
 from drf_extra_fields.fields import Base64ImageField
 from recipes.models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
-                            ShoppingCart, Tag, TagRecipe)
+                            ShoppingCart, Tag)
 from rest_framework import serializers
 from users.models import User, Subscription
 

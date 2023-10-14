@@ -69,7 +69,7 @@ class FavoriteAdmin(admin.ModelAdmin):
 class SubscriptionAdmin(admin.ModelAdmin):
     """Админка подписок."""
 
-    list_display = ('id', 'user', 'author', 'created')
+    list_display = ('id', 'user', 'author')
     list_filter = ('user',)
     search_fields = ('user',)
 

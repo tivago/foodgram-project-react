@@ -2,7 +2,7 @@ from django.contrib import admin
 
 from users.models import Subscription
 from .models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
-                     ShoppingCart, Tag)
+                     ShoppingCart, Tag, TagRecipe)
 
 
 class IngredientInRecipeInline(admin.TabularInline):
@@ -11,6 +11,13 @@ class IngredientInRecipeInline(admin.TabularInline):
     model = IngredientInRecipe
     extra = 1
     min_num = 1
+
+
+class TagRecipeInline(admin.TabularInline):
+    """Админка тегов рецептов."""
+
+    model = TagRecipe
+    extra = 1
 
 
 @admin.register(Ingredient)
@@ -35,7 +42,7 @@ class TagAdmin(admin.ModelAdmin):
 class RecipeAdmin(admin.ModelAdmin):
     """Админка рецептов."""
 
-    inlines = [IngredientInRecipeInline]
+    inlines = (IngredientInRecipeInline, TagRecipeInline)
     list_display = ('id', 'name', 'author', 'text', 'image', 'cooking_time')
     search_fields = ('name', 'author', 'tags')
     list_filter = ('name', 'author', 'tags')

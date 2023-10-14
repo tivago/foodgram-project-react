@@ -2,7 +2,7 @@ from django.db import transaction
 from django.forms import ValidationError
 from drf_extra_fields.fields import Base64ImageField
 from recipes.models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
-                            ShoppingCart, Tag)
+                            ShoppingCart, Tag, TagRecipe)
 from rest_framework import serializers
 from users.models import User, Subscription
 
@@ -276,10 +276,8 @@ class RecipePostSerializer(serializers.ModelSerializer):
     @transaction.atomic
     def update(self, instance, validated_data):
         tags = validated_data.pop('tags')
-        ingredients = validated_data.pop('ingredients')
-        instance.tags.clear()
-        instance.tags.set(tags)
-        instance.ingredients.clear()
+        ingredients = validated_data.pop('recipesingredients')
+        TagRecipe.objects.filter(recipe=instance).delete()
         IngredientInRecipe.objects.filter(recipe=instance).delete()
         instance = self.add_ingredients_and_tags(tags, ingredients, instance)
         super().update(instance, validated_data)

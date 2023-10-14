@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from users.models import (Subscription, )
+from users.models import Subscription
 from .models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
                      ShoppingCart, Tag, TagRecipe)
 

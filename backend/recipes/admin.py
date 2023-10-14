@@ -35,7 +35,7 @@ class TagAdmin(admin.ModelAdmin):
 class RecipeAdmin(admin.ModelAdmin):
     """Админка рецептов."""
 
-    inlines = (IngredientInRecipeInline)
+    inlines = [IngredientInRecipeInline]
     list_display = ('id', 'name', 'author', 'text', 'image', 'cooking_time')
     search_fields = ('name', 'author', 'tags')
     list_filter = ('name', 'author', 'tags')

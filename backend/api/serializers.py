@@ -2,7 +2,8 @@ from django.db import transaction
 from django.forms import ValidationError
 from djoser.serializers import UserCreateSerializer
 from drf_extra_fields.fields import Base64ImageField
-from recipes.models import (Ingredient, IngredientInRecipe, Recipe, Tag)
+from recipes.models import (Ingredient, IngredientInRecipe, Recipe, Tag,
+                            Favorite, ShoppingCart)
 from rest_framework import serializers
 
 from users.models import Subscription, User
@@ -251,3 +252,35 @@ class RecipePostSerializer(serializers.ModelSerializer):
         super().update(instance, validated_data)
         instance.save()
         return instance
+
+
+class FavoriteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Favorite
+        fields = ['user', 'recipe']
+
+    def validate(self, data):
+        user = data['user']
+        recipe = data['recipe']
+        if Favorite.objects.filter(user=user, recipe=recipe).exists():
+            raise serializers.ValidationError(
+                'Этот рецепт уже есть в избранном!'
+            )
+
+        return data
+
+
+class ShoppingCartSerializer(FavoriteSerializer):
+    class Meta(FavoriteSerializer.Meta):
+        model = ShoppingCart
+        fields = ['user', 'recipe']
+
+    def validate(self, data):
+        user = data['user']
+        recipe = data['recipe']
+        if self.Meta.model.objects.filter(user=user, recipe=recipe).exists():
+            raise serializers.ValidationError(
+
+                'Этот рецепт уже в корзине пользователя.'
+            )
+        return data

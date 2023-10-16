@@ -16,14 +16,14 @@ class Command(BaseCommand):
         try:
             with open(json_path, 'rb') as file:
                 data = json.load(file)
-                ingredients = [
-                    Ingredient(
-                        name=item.get('name'),
-                        measurement_unit=item.get('measurement_unit'),
-                    )
-                    for item in data
-                ]
-                Ingredient.objects.get_or_create(ingredients)
+            for ingredient in data:
+                obj, created = Ingredient.objects.get_or_create(
+                    name=ingredient["name"],
+                    measurement_unit=ingredient["measurement_unit"]
+                )
+                if not created:
+                    print(
+                        f'Ингридиент {ingredient["name"]} уже есть в базе')
             print('finished')
         except FileNotFoundError:
             print(f'Файл {file_name} не найден.')

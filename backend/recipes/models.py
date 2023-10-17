@@ -102,10 +102,6 @@ class Recipe(Model):
         Tag,
         verbose_name='Тег рецепта',
     )
-    recipe = models.ManyToManyField(
-        on_delete=models.CASCADE,
-        verbose_name='Рецепт',
-    )
     ingredients = models.ManyToManyField(
         Ingredient,
         through='IngredientInRecipe',

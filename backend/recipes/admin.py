@@ -13,6 +13,14 @@ class IngredientInRecipeInline(admin.TabularInline):
     min_num = 1
 
 
+class TagRecipeInline(admin.TabularInline):
+    """Админка тегов рецептов."""
+
+    model = Recipe
+    extra = 1
+    min_num = 1
+
+
 @admin.register(Ingredient)
 class IngredientAdmin(admin.ModelAdmin):
     """Админка ингредиента."""
@@ -35,7 +43,7 @@ class TagAdmin(admin.ModelAdmin):
 class RecipeAdmin(admin.ModelAdmin):
     """Админка рецептов."""
 
-    inlines = (IngredientInRecipeInline, )
+    inlines = (IngredientInRecipeInline, TagRecipeInline)
     list_display = ('id', 'name', 'author', 'text', 'image', 'cooking_time')
     search_fields = ('name', 'author', 'tags')
     list_filter = ('name', 'author', 'tags')

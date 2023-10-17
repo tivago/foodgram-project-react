@@ -257,7 +257,7 @@ class RecipePostSerializer(serializers.ModelSerializer):
 class FavoriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Favorite
-        fields = ['user', 'recipe']
+        fields = '__all__'
 
     def validate(self, data):
         user = data['user']
@@ -273,7 +273,7 @@ class FavoriteSerializer(serializers.ModelSerializer):
 class ShoppingCartSerializer(FavoriteSerializer):
     class Meta(FavoriteSerializer.Meta):
         model = ShoppingCart
-        fields = ['user', 'recipe']
+        fields = '__all__'
 
     def validate(self, data):
         user = data['user']

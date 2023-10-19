@@ -52,14 +52,14 @@ class MainUserViewSet(UserViewSet):
         methods=['POST'],
         permission_classes=(IsAuthenticated,),
     )
-    def subscribe(self, request, id=None):
+    def subscribe(self, request, *args, **kwargs):
         user = self.request.user
-        author = get_object_or_404(User, id=id)
+        following = get_object_or_404(User, pk=self.kwargs.get('pk'))
         serializer = SubscriptionsSerializer(data=request.data,
                                              context={'request': request,
-                                                      'following': author})
+                                                      'following': following})
         serializer.is_valid(raise_exception=True)
-        serializer.save(user=user, following=author)
+        serializer.save(user=user, following=following)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @subscribe.mapping.delete

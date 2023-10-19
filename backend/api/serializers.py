@@ -1,5 +1,4 @@
 from django.db import transaction
-from django.forms import ValidationError
 from djoser.serializers import UserCreateSerializer
 from drf_extra_fields.fields import Base64ImageField
 from recipes.models import (Ingredient, IngredientInRecipe, Recipe, Tag,

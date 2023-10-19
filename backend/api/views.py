@@ -40,15 +40,11 @@ class MainUserViewSet(UserViewSet):
         )
         return self.get_paginated_response(serializer.data)
 
-    @action(
-        detail=True,
-        methods=['POST'],
-        permission_classes=(IsAuthenticated,),
-    )
+    @action(detail=True, methods=['post'],
+            permission_classes=[IsAuthenticated])
     def subscribe(self, request, id=None):
-        author = get_object_or_404(User, id=id)
         serializer = SubscriptionsSerializer(
-            data={'user': request.user.id, 'author': author.id},
+            data=dict(author=id, user=request.user.id),
             context={'request': request}
         )
         serializer.is_valid(raise_exception=True)
@@ -57,15 +53,18 @@ class MainUserViewSet(UserViewSet):
 
     @subscribe.mapping.delete
     def delete_subscribe(self, request, id=None):
-        user = self.request.user
         author = get_object_or_404(User, id=id)
-        user_follow = Subscription.objects.filter(user=user,
-                                                  author=author).first()
-        if user_follow:
-            user_follow.delete()
+        subscription = Subscription.objects.filter(
+            user=request.user,
+            author=author
+        )
+        if subscription:
+            subscription.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
-        return Response({'errors': 'Ошибка отмены подписки'},
-                        status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            {'Попытка удалить несуществующую подписку!'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):

@@ -1,5 +1,6 @@
 from django.db import transaction
-from django.forms import ValidationError
+
+from django.shortcuts import get_object_or_404
 from djoser.serializers import UserCreateSerializer
 from drf_extra_fields.fields import Base64ImageField
 from recipes.models import (Ingredient, IngredientInRecipe, Recipe, Tag,
@@ -13,42 +14,33 @@ from users.models import Subscription, User
 class SubscriptionsSerializer(serializers.ModelSerializer):
     """Сериализатор для подписок."""
 
-    is_subscribed = serializers.SerializerMethodField()
-    recipes = serializers.SerializerMethodField()
-    recipes_count = serializers.SerializerMethodField()
+    user = serializers.IntegerField(source='user.id')
+    author = serializers.IntegerField(source='author.id')
 
     class Meta:
-        fields = (
-            'email',
-            'id',
-            'username',
-            'first_name',
-            'last_name',
-            'is_subscribed',
-            'recipes',
-            'recipes_count',
-        )
-        model = User
+        model = Subscription
+        fields = ['user', 'author']
 
     def validate(self, data):
-        user = self.context['request'].user
-        if data['author'] == user:
-            raise ValidationError('Нельзя подписываться на самого себя!')
+        user = data['user']['id']
+        author = data['author']['id']
+        follow_exist = Subscription.objects.filter(
+            user__id=user, author__id=author
+        ).exists()
+        if user == author:
+            raise serializers.ValidationError(
+                {"errors": 'Вы не можете подписаться на самого себя'}
+            )
+        elif follow_exist:
+            raise serializers.ValidationError({"errors": 'Вы уже подписаны'})
         return data
 
-    def get_is_subscribed(self, obj):
-        request = self.context.get('request')
-        return (
-            request.user.is_authenticated
-            and request.user.following.filter(author=obj).exists()
-        )
-
-    def get_recipes(self, author):
-        queryset = author.recipes.all()
-        return RecipeMinifieldSerializer(queryset, many=True).data
-
-    def get_recipes_count(self, author):
-        return author.recipes.all().count()
+    def create(self, validated_data):
+        author = validated_data.get('author')
+        author = get_object_or_404(User, pk=author.get('id'))
+        user = User.objects.get(id=validated_data["user"]["id"])
+        Subscription.objects.create(user=user, author=author)
+        return validated_data
 
 
 class UserSerializer(UserCreateSerializer):

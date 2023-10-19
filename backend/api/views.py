@@ -152,7 +152,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         )
 
     @favorite.mapping.delete
-    def favorite(self, request, pk):
+    def delete_favorite(self, request, pk):
         return self.delete_for_shopping_cart_and_favorite(
             request, pk, 'избранного', Favorite
         )
@@ -164,7 +164,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         )
 
     @shopping_cart.mapping.delete
-    def shopping_cart(self, request, pk):
+    def delete_shopping_cart(self, request, pk):
         return self.delete_for_shopping_cart_and_favorite(
             request, pk, 'списка покупок', ShoppingCart
         )

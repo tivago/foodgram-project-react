@@ -1,4 +1,5 @@
 from django.db import transaction
+from django.forms import ValidationError
 from djoser.serializers import UserCreateSerializer
 from drf_extra_fields.fields import Base64ImageField
 from recipes.models import (Ingredient, IngredientInRecipe, Recipe, Tag,
@@ -30,14 +31,9 @@ class SubscriptionsSerializer(serializers.ModelSerializer):
         model = User
 
     def validate(self, data):
-        request = self.context.get('request')
-        user = request.user
-        following = self.context.get('following')
-        if request.method == 'POST':
-            if user.follower.filter(following=following).first():
-                raise serializers.ValidationError(
-                    'Вы уже подписаны на этого пользователя'
-                )
+        user = self.context['request'].user
+        if data['author'] == user:
+            raise ValidationError('Нельзя подписываться на самого себя!')
         return data
 
     def get_is_subscribed(self, obj):

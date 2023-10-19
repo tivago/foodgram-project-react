@@ -28,39 +28,30 @@ class MainUserViewSet(UserViewSet):
     serializer_class = UserSerializer
     pagination_class = LimitPageNumberPagination
 
-    @action(
-        detail=False,
-        permission_classes=(IsAuthenticated,),
-    )
-    def subscriptions(self, request):
-        queryset = User.objects.filter(following__user=request.user)
-        obj = self.paginate_queryset(queryset)
-        serializer = SubscriptionsSerializer(
-            obj, many=True, context={'request': request}
-        )
-        return self.get_paginated_response(serializer.data)
-
-    @action(
-        detail=True,
-        methods=['POST'],
-        permission_classes=(IsAuthenticated,),
-    )
-    def subscribe(self, request, pk):
+    def post(self, request, pk):
+        author = get_object_or_404(User, pk=pk)
+        user = self.request.user
         data = {
-            'user': request.user.id,
-            'author': pk
+            'author': author.id,
+            'user': user.id
         }
-        serializer = SubscriptionsSerializer(data=data)
+        serializer = SubscriptionsSerializer(
+            data=data,
+            context={'request': request}
+        )
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(data=serializer.data, status=status.HTTP_201_CREATED)
 
-    @subscribe.mapping.delete
-    def delete_subscribe(self, request, pk):
-        instance = get_object_or_404(
-            Subscription, user=request.user, author_id=id
+    def delete(self, request, pk):
+        author = get_object_or_404(User, pk=pk)
+        user = self.request.user
+        subscription = get_object_or_404(
+            Subscription,
+            user=user,
+            author=author
         )
-        instance.delete()
+        subscription.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 

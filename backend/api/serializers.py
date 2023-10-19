@@ -1,6 +1,5 @@
 from django.db import transaction
 from django.forms import ValidationError
-from django.shortcuts import get_object_or_404
 from djoser.serializers import UserCreateSerializer
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
@@ -9,6 +8,35 @@ from rest_framework.validators import UniqueTogetherValidator
 from users.models import Subscription, User
 from recipes.models import (Ingredient, IngredientInRecipe, Recipe, Tag,
                             Favorite, ShoppingCart)
+
+
+class SubscribeSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Subscription
+        fields = ('user', 'author')
+
+    def to_representation(self, instance):
+        request = self.context.get('request')
+        context = {'request': request}
+        serializer = SubscriptionsSerializer(
+            instance,
+            context=context
+        )
+        return serializer.data
+
+    def validate(self, data):
+        user = data.get('user')
+        author = data.get('author')
+        if user == author:
+            raise serializers.ValidationError(
+                'Нельзя подписаться на самого себя!'
+            )
+        if Subscription.objects.filter(user=user, author=author).exists():
+            raise serializers.ValidationError(
+                'Вы уже подписаны на этого пользователя!'
+            )
+        return data
 
 
 class SubscriptionsSerializer(serializers.ModelSerializer):
@@ -39,12 +67,10 @@ class SubscriptionsSerializer(serializers.ModelSerializer):
 
     def get_is_subscribed(self, obj):
         request = self.context.get('request')
-        return (
-            request.user.is_authenticated
-            and Subscription.objects.filter(
-                user=request.user, author=obj
-            ).exists()
-        )
+        return Subscription.objects.filter(
+            user=request.user.is_authenticated,
+            author=obj
+        ).exists()
 
     def get_recipes(self, author):
         queryset = author.recipes.all()
@@ -52,31 +78,6 @@ class SubscriptionsSerializer(serializers.ModelSerializer):
 
     def get_recipes_count(self, author):
         return author.recipes.all().count()
-
-
-class SubscribeSerializer(serializers.Serializer):
-    """Сериализатор для оформления подписки на пользователя."""
-
-    def validate(self, data):
-        user = self.context.get('request').user
-        author = get_object_or_404(User, pk=self.context.get('id'))
-        if user == author:
-            raise serializers.ValidationError(
-                'Вы не можете подписаться на себя самого'
-            )
-        if author.subscribed.filter(user=user).exists():
-            raise serializers.ValidationError(
-                'Вы уже подписаны на этого пользователя'
-            )
-        return data
-
-    def create(self, validated_data):
-        user = self.context.get('request').user
-        author = get_object_or_404(User, pk=validated_data.get('id'))
-        author.subscribed.create(user=user)
-        return SubscriptionsSerializer(
-            instance=author, context={'request': self.context.get('request')}
-        ).data
 
 
 class UserSerializer(UserCreateSerializer):

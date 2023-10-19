@@ -41,6 +41,31 @@ class SubscriptionsSerializer(serializers.ModelSerializer):
         return author.recipes.all().count()
 
 
+class SubscriptionsToSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор подписки/отписки от пользователя.
+    """
+
+    class Meta:
+        model = Subscription
+        fields = ("user", "author")
+
+    def validate(self, data):
+        user = data.get("user")
+        author = data.get("author")
+        if user == author:
+            raise serializers.ValidationError('Нельзя подписываться на себя!')
+        if user.follower.filter(author=author).exists():
+            raise serializers.ValidationError('Вы уже подписаны на автора!')
+        return data
+
+    def to_representation(self, instance):
+        request = self.context.get("request")
+        context = {"request": request}
+        serializer = SubscriptionsSerializer(instance, context=context)
+        return serializer.data
+
+
 class UserSerializer(UserCreateSerializer):
     """Сериализатор пользователя."""
 
@@ -278,18 +303,3 @@ class ShortRecipeResponseSerializer(serializers.ModelSerializer):
         model = Recipe
         fields = ('id', 'name', 'image', 'cooking_time')
         read_only_fields = ('__all__',)
-
-
-class ShortSubResponseSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = Subscription
-        fields = '__all__'
-        read_only_fields = ('__all__',)
-        validators = [
-            UniqueTogetherValidator(
-                queryset=Subscription.objects.all(),
-                fields=('user', 'recipe'),
-                message='Вы уже добавляли это рецепт в избранное.'
-            )
-        ]

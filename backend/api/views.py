@@ -18,7 +18,7 @@ from .serializers import (IngredientSerializer, ShortRecipeResponseSerializer,
                           RecipeMinifieldSerializer, RecipePostSerializer,
                           RecipeSerializer, SubscriptionsSerializer,
                           TagSerializer, UserSerializer, FavoriteSerializer,
-                          ShoppingCartSerializer, ShortSubResponseSerializer)
+                          ShoppingCartSerializer, SubscriptionsToSerializer)
 
 
 class MainUserViewSet(UserViewSet):
@@ -40,25 +40,24 @@ class MainUserViewSet(UserViewSet):
         )
         return self.get_paginated_response(serializer.data)
 
-    @staticmethod
-    def post_for_subs(request, pk, serializer_req):
+    @action(
+        detail=True,
+        methods=['POST'],
+        permission_classes=(IsAuthenticated,),
+    )
+    def subscribe(self, request, pk):
         author = get_object_or_404(User, pk=pk)
-        data = {'user': request.user.id, 'author': pk}
-        serializer = serializer_req(data=data, context={'request': request})
+        user = self.request.user
+        data = {"author": author.id, "user": user.id}
+        serializer = SubscriptionsToSerializer(
+            data=data, context={"request": request})
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        serializer_data = ShortSubResponseSerializer(author)
-        return Response(serializer_data.data, status=status.HTTP_201_CREATED)
+        return Response(data=serializer.data, status=status.HTTP_201_CREATED)
 
-    @action(methods=['post'], detail=True)
-    def sub(self, request, pk):
-        return self.post_for_shopping_cart_and_favorite(
-            request, pk, ShortSubResponseSerializer
-        )
-
-    @sub.mapping.delete
-    def delete_subscribe(self, request, pk):
-        author = get_object_or_404(User, pk=pk)
+    @subscribe.mapping.delete
+    def delete_subscribe(self, request, id=None):
+        author = get_object_or_404(User, id=id)
         user = self.request.user
         following = get_object_or_404(Subscription, user=user, author=author)
         following.delete()

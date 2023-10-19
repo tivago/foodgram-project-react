@@ -40,9 +40,7 @@ class SubscriptionsSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         return (
             request.user.is_authenticated
-            and Subscription.objects.filter(
-                user=request.user, author=obj
-            ).exists()
+            and request.user.following.filter(author=obj).exists()
         )
 
     def get_recipes(self, author):

@@ -27,13 +27,6 @@ class MainUserViewSet(UserViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     pagination_class = LimitPageNumberPagination
-    http_method_name = (
-        'get',
-        'post',
-        'put',
-        'patch',
-        'delete',
-    )
 
     @action(
         detail=False,
@@ -52,9 +45,9 @@ class MainUserViewSet(UserViewSet):
         methods=['POST'],
         permission_classes=(IsAuthenticated,),
     )
-    def subscribe(self, request, *args, **kwargs):
+    def subscribe(self, request, id=None):
         user = request.user
-        author = get_object_or_404(User, pk=self.kwargs.get('pk'))
+        author = get_object_or_404(User, id=id)
         serializer = SubscriptionsSerializer(data=request.data,
                                              context={'request': request,
                                                       'author': author})
@@ -63,9 +56,9 @@ class MainUserViewSet(UserViewSet):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @subscribe.mapping.delete
-    def delete_subscribe(self, request, *args, **kwargs):
+    def delete_subscribe(self, request, id=None):
         user = self.request.user
-        author = get_object_or_404(User, pk=self.kwargs.get('pk'))
+        author = get_object_or_404(User, id=id)
         user_follow = Subscription.objects.filter(user=user,
                                                   author=author).first()
         if user_follow:

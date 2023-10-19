@@ -14,9 +14,8 @@ from users.models import Subscription, User
 class SubscriptionsSerializer(serializers.ModelSerializer):
     """Сериализатор для подписок."""
 
-    is_subscribed = serializers.SerializerMethodField()
-    recipes = serializers.SerializerMethodField()
-    recipes_count = serializers.SerializerMethodField()
+    user = serializers.IntegerField(source='user.id')
+    author = serializers.IntegerField(source='author.id')
 
     class Meta:
         model = Subscription
@@ -280,3 +279,21 @@ class ShortRecipeResponseSerializer(serializers.ModelSerializer):
         model = Recipe
         fields = ('id', 'name', 'image', 'cooking_time')
         read_only_fields = ('__all__',)
+
+
+class SubSerializer(serializers.ModelSerializer):
+    is_subscribed = serializers.SerializerMethodField()
+    recipes = RecipeSerializer(many=True)
+    recipes_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = ('id', 'email', 'username', 'first_name',
+                  'last_name', 'is_subscribed', 'recipes', 'recipes_count')
+
+    @staticmethod
+    def get_is_subscribed(obj):
+        return True
+
+    def get_recipes_count(self, obj):
+        return obj.recipes.count()

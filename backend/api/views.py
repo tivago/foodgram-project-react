@@ -18,7 +18,7 @@ from .serializers import (IngredientSerializer, ShortRecipeResponseSerializer,
                           RecipeMinifieldSerializer, RecipePostSerializer,
                           RecipeSerializer, SubscriptionsSerializer,
                           TagSerializer, UserSerializer, FavoriteSerializer,
-                          ShoppingCartSerializer)
+                          ShoppingCartSerializer, SubSerializer)
 
 
 class MainUserViewSet(UserViewSet):
@@ -29,16 +29,17 @@ class MainUserViewSet(UserViewSet):
     pagination_class = LimitPageNumberPagination
 
     @action(
-        detail=False,
-        permission_classes=(IsAuthenticated,),
+        detail=False, methods=['get'], permission_classes=[IsAuthenticated]
     )
     def subscriptions(self, request):
         queryset = User.objects.filter(following__user=request.user)
-        obj = self.paginate_queryset(queryset)
-        serializer = SubscriptionsSerializer(
-            obj, many=True, context={'request': request}
-        )
-        return self.get_paginated_response(serializer.data)
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = SubSerializer(queryset, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['post'],
             permission_classes=[IsAuthenticated])

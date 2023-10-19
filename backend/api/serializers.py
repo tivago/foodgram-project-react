@@ -30,12 +30,6 @@ class SubscriptionsSerializer(serializers.ModelSerializer):
         )
         model = User
 
-    def validate(self, data):
-        user = self.context['request'].user
-        if data['author'] == user:
-            raise ValidationError('Нельзя подписываться на самого себя!')
-        return data
-
     def get_is_subscribed(self, obj):
         request = self.context.get("request")
         return request.user.follower.filter(author=obj).exists()

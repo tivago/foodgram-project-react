@@ -45,8 +45,8 @@ class MainUserViewSet(UserViewSet):
         methods=['POST'],
         permission_classes=(IsAuthenticated,),
     )
-    def subscribe(self, request, id=None):
-        author = get_object_or_404(User, id=id)
+    def subscribe(self, request, pk):
+        author = get_object_or_404(User, pk=pk)
         user = self.request.user
         data = {"author": author.id, "user": user.id}
         serializer = SubscriptionsToSerializer(
@@ -56,8 +56,8 @@ class MainUserViewSet(UserViewSet):
         return Response(data=serializer.data, status=status.HTTP_201_CREATED)
 
     @subscribe.mapping.delete
-    def delete_subscribe(self, request, id=None):
-        author = get_object_or_404(User, id=id)
+    def delete_subscribe(self, request, pk):
+        author = get_object_or_404(User, pk=pk)
         user = self.request.user
         following = get_object_or_404(Subscription, user=user, author=author)
         following.delete()

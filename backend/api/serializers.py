@@ -14,8 +14,9 @@ from users.models import Subscription, User
 class SubscriptionsSerializer(serializers.ModelSerializer):
     """Сериализатор для подписок."""
 
-    user = serializers.IntegerField(source='user.id')
-    author = serializers.IntegerField(source='author.id')
+    is_subscribed = serializers.SerializerMethodField()
+    recipes = serializers.SerializerMethodField()
+    recipes_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Subscription

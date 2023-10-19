@@ -19,7 +19,8 @@ class SubscriptionsSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Subscription
-        fields = ['user', 'author']
+        fields = '__all__'
+        read_only_fields = ('__all__',)
 
     def validate(self, data):
         user = data['user']['id']
@@ -289,7 +290,7 @@ class SubSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('id', 'email', 'username', 'first_name',
-                  'last_name', 'is_subscribed', 'recipes', 'recipes_count')
+                  'last_name', 'is_subscribed', 'recipes')
 
     @staticmethod
     def get_is_subscribed(obj):

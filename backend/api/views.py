@@ -48,7 +48,7 @@ class MainUserViewSet(UserViewSet):
         return self.get_paginated_response(serializer.data)
 
     @action(
-        detail=True,
+        detail=False,
         methods=['POST'],
         permission_classes=(IsAuthenticated,),
     )
@@ -63,17 +63,16 @@ class MainUserViewSet(UserViewSet):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @subscribe.mapping.delete
-    def delete_subscribe(self, request, id=None):
-        user = request.user
-        author = get_object_or_404(User, id=id)
-        subscribe = Subscription.objects.filter(user=user, author=author)
-        if not subscribe.exists():
-            return Response(
-                data={'detail': 'Вы не подписаны на этого автора!'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        subscribe.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+    def delete_subscribe(self, request, *args, **kwargs):
+        user = self.request.user
+        following = get_object_or_404(User, pk=self.kwargs.get('pk'))
+        user_follow = Subscription.objects.filter(user=user,
+                                                  following=following).first()
+        if user_follow:
+            user_follow.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response({'errors': 'Ошибка отмены подписки'},
+                        status=status.HTTP_400_BAD_REQUEST)
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):

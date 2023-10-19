@@ -2,41 +2,12 @@ from django.db import transaction
 from django.forms import ValidationError
 from djoser.serializers import UserCreateSerializer
 from drf_extra_fields.fields import Base64ImageField
+from recipes.models import (Ingredient, IngredientInRecipe, Recipe, Tag,
+                            Favorite, ShoppingCart)
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
 from users.models import Subscription, User
-from recipes.models import (Ingredient, IngredientInRecipe, Recipe, Tag,
-                            Favorite, ShoppingCart)
-
-
-class SubscribeSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = Subscription
-        fields = ('user', 'author')
-
-    def to_representation(self, instance):
-        request = self.context.get('request')
-        context = {'request': request}
-        serializer = SubscriptionsSerializer(
-            instance,
-            context=context
-        )
-        return serializer.data
-
-    def validate(self, data):
-        user = data.get('user')
-        author = data.get('author')
-        if user == author:
-            raise serializers.ValidationError(
-                'Нельзя подписаться на самого себя!'
-            )
-        if Subscription.objects.filter(user=user, author=author).exists():
-            raise serializers.ValidationError(
-                'Вы уже подписаны на этого пользователя!'
-            )
-        return data
 
 
 class SubscriptionsSerializer(serializers.ModelSerializer):
@@ -67,10 +38,12 @@ class SubscriptionsSerializer(serializers.ModelSerializer):
 
     def get_is_subscribed(self, obj):
         request = self.context.get('request')
-        return Subscription.objects.filter(
-            user=request.user.is_authenticated,
-            author=obj
-        ).exists()
+        return (
+            request.user.is_authenticated
+            and Subscription.objects.filter(
+                user=request.user, author=obj
+            ).exists()
+        )
 
     def get_recipes(self, author):
         queryset = author.recipes.all()
@@ -191,17 +164,15 @@ class RecipeSerializer(serializers.ModelSerializer):
 
     def get_is_favorited(self, recipe):
         request = self.context['request']
-        return (
-            request.user.is_authenticated
-            and request.user.favorites.filter(recipe=recipe).exists()
-        )
+        if request is None or request.user.is_anonymous:
+            return False
+        return request.user.favorites.filter(recipe=recipe).exists()
 
     def get_is_in_shopping_cart(self, recipe):
         request = self.context.get('request')
-        return (
-            request.user.is_authenticated
-            and request.user.shoppingcart.filter(recipe=recipe).exists()
-        )
+        if request.user.is_anonymous:
+            return False
+        return request.user.shoppingcart.filter(recipe=recipe).exists()
 
 
 class RecipePostSerializer(serializers.ModelSerializer):

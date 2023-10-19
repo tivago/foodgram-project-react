@@ -55,19 +55,11 @@ class MainUserViewSet(UserViewSet):
     def subscribe(self, request, id=None):
         user = request.user
         author = get_object_or_404(User, id=id)
-
-        if user == author:
-            return Response(
-                data={'detail': 'Нельзя подписываться на себя!'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        if Subscription.objects.filter(user=user, author=author).exists():
-            return Response(
-                data={'detail': 'Вы уже подписаны на этого автора!'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        Subscription.objects.create(user=user, author=author)
-        serializer = self.get_serializer(author)
+        serializer = SubscriptionsSerializer(data=request.data,
+                                             context={'request': request,
+                                                      'following': author})
+        serializer.is_valid(raise_exception=True)
+        serializer.save(user=user, following=author)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @subscribe.mapping.delete

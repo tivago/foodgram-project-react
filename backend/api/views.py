@@ -48,7 +48,7 @@ class MainUserViewSet(UserViewSet):
         return self.get_paginated_response(serializer.data)
 
     @action(
-        detail=False,
+        detail=True,
         methods=['POST'],
         permission_classes=(IsAuthenticated,),
     )

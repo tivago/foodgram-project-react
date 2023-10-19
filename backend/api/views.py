@@ -49,35 +49,39 @@ class MainUserViewSet(UserViewSet):
 
     @action(
         detail=True,
-        methods=['POST', 'DELETE'],
+        methods=['POST'],
         permission_classes=(IsAuthenticated,),
     )
     def subscribe(self, request, id=None):
         user = request.user
         author = get_object_or_404(User, id=id)
-        if request.method == 'POST':
-            if user == author:
-                return Response(
-                    data={'detail': 'Нельзя подписываться на себя!'},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-            if Subscription.objects.filter(user=user, author=author).exists():
-                return Response(
-                    data={'detail': 'Вы уже подписаны на этого автора!'},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-            Subscription.objects.create(user=user, author=author)
-            serializer = self.get_serializer(author)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        elif request.method == 'DELETE':
-            subscribe = Subscription.objects.filter(user=user, author=author)
-            if not subscribe.exists():
-                return Response(
-                    data={'detail': 'Вы не подписаны на этого автора!'},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-            subscribe.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        if user == author:
+            return Response(
+                data={'detail': 'Нельзя подписываться на себя!'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if Subscription.objects.filter(user=user, author=author).exists():
+            return Response(
+                data={'detail': 'Вы уже подписаны на этого автора!'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        Subscription.objects.create(user=user, author=author)
+        serializer = self.get_serializer(author)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @subscribe.mapping.delete
+    def delete_subscribe(self, request, id=None):
+        user = request.user
+        author = get_object_or_404(User, id=id)
+        subscribe = Subscription.objects.filter(user=user, author=author)
+        if not subscribe.exists():
+            return Response(
+                data={'detail': 'Вы не подписаны на этого автора!'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        subscribe.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):

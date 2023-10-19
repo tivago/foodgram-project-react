@@ -52,9 +52,9 @@ class MainUserViewSet(UserViewSet):
         methods=['POST'],
         permission_classes=(IsAuthenticated,),
     )
-    def subscribe(self, request, id=None):
+    def subscribe(self, request, *args, **kwargs):
         user = request.user
-        following = get_object_or_404(User, id=id)
+        following = get_object_or_404(User, pk=self.kwargs.get('pk'))
         serializer = SubscriptionsSerializer(data=request.data,
                                              context={'request': request,
                                                       'following': following})

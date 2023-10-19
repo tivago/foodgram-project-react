@@ -53,7 +53,7 @@ class MainUserViewSet(UserViewSet):
         permission_classes=(IsAuthenticated,),
     )
     def subscribe(self, request, id=None):
-        user = request.user
+        user = self.request.user
         author = get_object_or_404(User, id=id)
         serializer = SubscriptionsSerializer(data=request.data,
                                              context={'request': request,

@@ -28,9 +28,26 @@ class MainUserViewSet(UserViewSet):
     serializer_class = UserSerializer
     pagination_class = LimitPageNumberPagination
 
-    def post(self, request, pk):
-        author = get_object_or_404(User, pk=pk)
-        user = self.request.user
+    @action(
+        detail=False,
+        permission_classes=(IsAuthenticated,),
+    )
+    def subscriptions(self, request):
+        queryset = User.objects.filter(following__user=request.user)
+        obj = self.paginate_queryset(queryset)
+        serializer = SubscriptionsSerializer(
+            obj, many=True, context={'request': request}
+        )
+        return self.get_paginated_response(serializer.data)
+
+    @action(
+        detail=True,
+        methods=['POST'],
+        permission_classes=(IsAuthenticated,),
+    )
+    def post(self, request, id=None):
+        author = get_object_or_404(User, id=id)
+        user = request.user
         data = {
             'author': author.id,
             'user': user.id
@@ -43,9 +60,9 @@ class MainUserViewSet(UserViewSet):
         serializer.save()
         return Response(data=serializer.data, status=status.HTTP_201_CREATED)
 
-    def delete(self, request, pk):
-        author = get_object_or_404(User, pk=pk)
-        user = self.request.user
+    def delete(self, request, id=None):
+        author = get_object_or_404(User, id=id)
+        user = request.user
         subscription = get_object_or_404(
             Subscription,
             user=user,

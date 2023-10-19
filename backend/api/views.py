@@ -46,13 +46,11 @@ class MainUserViewSet(UserViewSet):
         permission_classes=(IsAuthenticated,),
     )
     def subscribe(self, request, id=None):
-        queryset = User.objects.filter(following__user=request.user)
-        obj = self.paginate_queryset(queryset)
         user = request.user
         author = get_object_or_404(User, id=id)
-        serializer = SubscriptionsSerializer(
-            obj, many=True, context={'request': request}
-        )
+        serializer = SubscriptionsSerializer(data=request.data,
+                                             context={'request': request,
+                                                      'author': author})
         serializer.is_valid(raise_exception=True)
         serializer.save(user=user, author=author)
         return Response(serializer.data, status=status.HTTP_201_CREATED)

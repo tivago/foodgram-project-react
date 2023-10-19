@@ -18,7 +18,7 @@ from .serializers import (IngredientSerializer, ShortRecipeResponseSerializer,
                           RecipeMinifieldSerializer, RecipePostSerializer,
                           RecipeSerializer, SubscriptionsSerializer,
                           TagSerializer, UserSerializer, FavoriteSerializer,
-                          ShoppingCartSerializer, SubscriptionsToSerializer)
+                          ShoppingCartSerializer)
 
 
 class MainUserViewSet(UserViewSet):
@@ -45,20 +45,23 @@ class MainUserViewSet(UserViewSet):
         methods=['POST'],
         permission_classes=(IsAuthenticated,),
     )
-    def subscribe(self, request, pk=None):
-        serializer = self.get_serializer(
-            data=request.data, context={'request': request, 'id': pk}
-        )
+    def subscribe(self, request, pk):
+        data = {
+            'user': request.user.id,
+            'author': pk
+        }
+        serializer = SubscriptionsSerializer(data=data)
         serializer.is_valid(raise_exception=True)
-        response_data = serializer.save(id=pk)
-        return Response(data=response_data, status=status.HTTP_201_CREATED)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @subscribe.mapping.delete
-    def delete_subscribe(self, request, pk=None):
-        user = self.request.user
-        subscribe, created = Subscription.objects.filter(
-            user=user, author_id=pk
-        ).delete()
+    def delete_subscribe(self, request, pk):
+        instance = get_object_or_404(
+            Subscription, user=request.user, author_id=id
+        )
+        instance.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):

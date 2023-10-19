@@ -1,4 +1,5 @@
 from django.db import transaction
+from django.forms import ValidationError
 from django.shortcuts import get_object_or_404
 from djoser.serializers import UserCreateSerializer
 from drf_extra_fields.fields import Base64ImageField
@@ -30,6 +31,12 @@ class SubscriptionsSerializer(serializers.ModelSerializer):
         )
         model = User
 
+    def validate(self, data):
+        user = self.context['request'].user
+        if data['author'] == user:
+            raise ValidationError('Нельзя подписываться на самого себя!')
+        return data
+
     def get_is_subscribed(self, obj):
         request = self.context.get('request')
         return (
@@ -45,7 +52,8 @@ class SubscriptionsSerializer(serializers.ModelSerializer):
 
     def get_recipes_count(self, author):
         return author.recipes.all().count()
-    
+
+
 class SubscribeSerializer(serializers.Serializer):
     """Сериализатор для оформления подписки на пользователя."""
 

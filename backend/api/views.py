@@ -54,20 +54,20 @@ class MainUserViewSet(UserViewSet):
     )
     def subscribe(self, request, *args, **kwargs):
         user = request.user
-        following = get_object_or_404(User, pk=self.kwargs.get('pk'))
+        author = get_object_or_404(User, pk=self.kwargs.get('pk'))
         serializer = SubscriptionsSerializer(data=request.data,
                                              context={'request': request,
-                                                      'following': following})
+                                                      'author': author})
         serializer.is_valid(raise_exception=True)
-        serializer.save(user=user, following=following)
+        serializer.save(user=user, author=author)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @subscribe.mapping.delete
     def delete_subscribe(self, request, *args, **kwargs):
         user = self.request.user
-        following = get_object_or_404(User, pk=self.kwargs.get('pk'))
+        author = get_object_or_404(User, pk=self.kwargs.get('pk'))
         user_follow = Subscription.objects.filter(user=user,
-                                                  following=following).first()
+                                                  author=author).first()
         if user_follow:
             user_follow.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)

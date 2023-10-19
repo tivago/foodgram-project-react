@@ -28,7 +28,7 @@ class SubscriptionsSerializer(serializers.ModelSerializer):
             'recipes',
             'recipes_count',
         )
-        model = Subscription
+        model = User
 
     def validate(self, data):
         user = self.context['request'].user

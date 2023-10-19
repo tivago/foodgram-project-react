@@ -5,7 +5,7 @@ from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
-from users.models import User
+from users.models import Subscription, User
 from recipes.models import (Ingredient, IngredientInRecipe, Recipe, Tag,
                             Favorite, ShoppingCart)
 
@@ -18,8 +18,16 @@ class SubscriptionsSerializer(serializers.ModelSerializer):
     recipes_count = serializers.SerializerMethodField()
 
     class Meta:
-        fields = '__all__'
-        read_only_fields = ('__all__',)
+        fields = (
+            'email',
+            'id',
+            'username',
+            'first_name',
+            'last_name',
+            'is_subscribed',
+            'recipes',
+            'recipes_count',
+        )
         model = User
 
     def validate(self, data):
@@ -29,11 +37,8 @@ class SubscriptionsSerializer(serializers.ModelSerializer):
         return data
 
     def get_is_subscribed(self, obj):
-        request = self.context.get('request')
-        return (
-            request.user.is_authenticated
-            and request.user.follower.filter(author=obj).exists()
-        )
+        request = self.context.get("request")
+        return request.user.follower.filter(author=obj).exists()
 
     def get_recipes(self, author):
         queryset = author.recipes.all()
@@ -41,6 +46,31 @@ class SubscriptionsSerializer(serializers.ModelSerializer):
 
     def get_recipes_count(self, author):
         return author.recipes.all().count()
+
+
+class SubscriptionsToSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор подписки/отписки от пользователя.
+    """
+
+    class Meta:
+        model = Subscription
+        fields = ("user", "author")
+
+    def validate(self, data):
+        user = data.get("user")
+        author = data.get("author")
+        if user == author:
+            raise serializers.ValidationError('Нельзя подписываться на себя!')
+        if user.follower.filter(author=author).exists():
+            raise serializers.ValidationError('Вы уже подписаны на автора!')
+        return data
+
+    def to_representation(self, instance):
+        request = self.context.get("request")
+        context = {"request": request}
+        serializer = SubscriptionsSerializer(instance, context=context)
+        return serializer.data
 
 
 class UserSerializer(UserCreateSerializer):

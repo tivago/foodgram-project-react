@@ -45,23 +45,20 @@ class MainUserViewSet(UserViewSet):
         methods=['POST'],
         permission_classes=(IsAuthenticated,),
     )
-    def subscribe(self, request, pk):
-        author = get_object_or_404(User, pk=pk)
-        user = self.request.user
-        data = {"author": author.id, "user": user.id}
-        serializer = SubscriptionsToSerializer(
-            data=data, context={"request": request})
+    def subscribe(self, request, pk=None):
+        serializer = self.get_serializer(
+            data=request.data, context={'request': request, 'id': pk}
+        )
         serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(data=serializer.data, status=status.HTTP_201_CREATED)
+        response_data = serializer.save(id=pk)
+        return Response(data=response_data, status=status.HTTP_201_CREATED)
 
     @subscribe.mapping.delete
-    def delete_subscribe(self, request, id=None):
-        author = get_object_or_404(User, id=id)
+    def delete_subscribe(self, request, pk=None):
         user = self.request.user
-        following = get_object_or_404(Subscription, user=user, author=author)
-        following.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        subscribe, created = Subscription.objects.filter(
+            user=user, author_id=pk
+        ).delete()
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):

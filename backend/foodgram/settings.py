@@ -126,7 +126,7 @@ REST_FRAMEWORK = {
 
 
 # Internationalizatio
-# https://docs.djangoproject.com/en/4.2/topics/i18n
+# https://docs.djangoproject.com/en/4.2/topics/i18
 
 LANGUAGE_CODE = 'en-us'
 

@@ -24,9 +24,7 @@ class SubscriptionsSerializer(serializers.ModelSerializer):
     def validate(self, data):
         user = data['user']['id']
         author = data['author']['id']
-        follow_exist = Subscription.objects.filter(
-            user__id=user, author__id=author
-        ).exists()
+        follow_exist = user.follower.filter(author__id=author).exists()
         if user == author:
             raise serializers.ValidationError(
                 {"errors": 'Вы не можете подписаться на самого себя'}

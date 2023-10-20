@@ -277,3 +277,21 @@ class ShortRecipeResponseSerializer(serializers.ModelSerializer):
         model = Recipe
         fields = ('id', 'name', 'image', 'cooking_time')
         read_only_fields = ('__all__',)
+
+
+class FollowerSerializer(serializers.ModelSerializer):
+    is_subscribed = serializers.SerializerMethodField()
+    recipes = RecipeSerializer(many=True)
+    recipes_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = ('id', 'email', 'username', 'first_name',
+                  'last_name', 'is_subscribed', 'recipes', 'recipes_count')
+
+    @staticmethod
+    def get_is_subscribed(obj):
+        return True
+
+    def get_recipes_count(self, obj):
+        return obj.recipes.count()

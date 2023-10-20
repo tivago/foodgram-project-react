@@ -18,37 +18,30 @@ from .serializers import (IngredientSerializer, ShortRecipeResponseSerializer,
                           RecipeMinifieldSerializer, RecipePostSerializer,
                           RecipeSerializer, SubscriptionsSerializer,
                           TagSerializer, UserSerializer, FavoriteSerializer,
-                          ShoppingCartSerializer)
+                          ShoppingCartSerializer, FollowerSerializer)
 
 
 class MainUserViewSet(UserViewSet):
     """Вьюсет для пользователя."""
 
-    # queryset = User.objects.all()
+    queryset = User.objects.all()
     serializer_class = UserSerializer
     pagination_class = LimitPageNumberPagination
 
-    def get_queryset(self):
-        is_favorited = self.request.GET.get("is_favorited")
-        is_in_shopping_cart = self.request.GET.get("is_in_shopping_cart")
-        if is_favorited:
-            return Recipe.objects.filter(favouriting__user=self.request.user)
-        if is_in_shopping_cart:
-            print(Recipe.objects.filter(buying__user=self.request.user))
-            return Recipe.objects.filter(buying__user=self.request.user)
-        return Recipe.objects.all().order_by('-id')
-
     @action(
         detail=False,
+        methods=['get'],
         permission_classes=(IsAuthenticated,),
     )
     def subscriptions(self, request):
         queryset = User.objects.filter(following__user=request.user)
-        obj = self.paginate_queryset(queryset)
-        serializer = SubscriptionsSerializer(
-            obj, many=True, context={'request': request}
-        )
-        return self.get_paginated_response(serializer.data)
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = FollowerSerializer(queryset, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['post'],
             permission_classes=[IsAuthenticated])

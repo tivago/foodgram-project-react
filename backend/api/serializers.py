@@ -14,12 +14,12 @@ from users.models import Subscription, User
 class SubscriptionsSerializer(serializers.ModelSerializer):
     """Сериализатор для подписок."""
 
-    user = serializers.IntegerField(source='request.user')
+    user = serializers.IntegerField(source='user.id')
     author = serializers.IntegerField(source='author.id')
 
     class Meta:
         model = Subscription
-        fields = ['user', 'author']
+        fields = ['user', 'author', 'id',]
 
     def validate(self, data):
         user = data['user']['id']

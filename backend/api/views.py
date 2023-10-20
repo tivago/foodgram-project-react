@@ -24,9 +24,19 @@ from .serializers import (IngredientSerializer, ShortRecipeResponseSerializer,
 class MainUserViewSet(UserViewSet):
     """Вьюсет для пользователя."""
 
-    queryset = User.objects.all()
+    # queryset = User.objects.all()
     serializer_class = UserSerializer
     pagination_class = LimitPageNumberPagination
+
+    def get_queryset(self):
+        is_favorited = self.request.GET.get("is_favorited")
+        is_in_shopping_cart = self.request.GET.get("is_in_shopping_cart")
+        if is_favorited:
+            return Recipe.objects.filter(favouriting__user=self.request.user)
+        if is_in_shopping_cart:
+            print(Recipe.objects.filter(buying__user=self.request.user))
+            return Recipe.objects.filter(buying__user=self.request.user)
+        return Recipe.objects.all().order_by('-id')
 
     @action(
         detail=False,

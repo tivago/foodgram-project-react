@@ -27,10 +27,10 @@ class SubscriptionsSerializer(serializers.ModelSerializer):
         follow_exist = request.user.follower.all().exists()
         if user == author:
             raise serializers.ValidationError(
-                {"errors": 'Вы не можете подписаться на самого себя'}
+                [[['Вы не можете подписаться на самого себя']]]
             )
         elif follow_exist:
-            raise serializers.ValidationError({"errors": 'Вы уже подписаны'})
+            raise serializers.ValidationError([[['Вы уже подписаны']]])
         return data
 
     def create(self, validated_data):

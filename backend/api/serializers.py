@@ -186,7 +186,8 @@ class RecipePostSerializer(serializers.ModelSerializer):
         )
         model = Recipe
 
-    def validate_ingredients(self, ingredients):
+    def validate_ingredients(self, data):
+        ingredients = data.get('ingredients')
         if not ingredients:
             raise serializers.ValidationError(
                 {"errors": 'Необходимо выбрать ингредиенты!'}
@@ -202,7 +203,7 @@ class RecipePostSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {"errors": 'Данный ингредиент уже есть в рецепте!'}
             )
-        return ingredients
+        return data
 
     def add_ingredients_and_tags(self, tags, ingredients, recipe):
         recipe.tags.set(tags)

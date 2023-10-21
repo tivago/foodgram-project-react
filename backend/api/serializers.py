@@ -4,6 +4,7 @@ from djoser.serializers import UserCreateSerializer
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
+from rest_framework.serializers import ValidationError
 
 from recipes.models import (Ingredient, IngredientInRecipe, Recipe, Tag,
                             Favorite, ShoppingCart)
@@ -188,18 +189,18 @@ class RecipePostSerializer(serializers.ModelSerializer):
 
     def validate_ingredients(self, ingredients):
         if not ingredients:
-            raise serializers.ValidationError(
+            raise ValidationError(
                 {"errors": 'Необходимо выбрать ингредиенты!'}
             )
 
         for ingredient in ingredients:
             if ingredient['amount'] < 1:
-                raise serializers.ValidationError(
+                raise ValidationError(
                     {"errors": 'Количество не может быть меньше 1!'}
                 )
         ids = [ingredient['id'] for ingredient in ingredients]
         if len(ids) != len(set(ids)):
-            raise serializers.ValidationError(
+            raise ValidationError(
                 {"errors": 'Данный ингредиент уже есть в рецепте!'}
             )
         return ingredients

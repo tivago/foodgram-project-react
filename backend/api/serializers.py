@@ -1,5 +1,4 @@
 from django.db import transaction
-
 from django.shortcuts import get_object_or_404
 from djoser.serializers import UserCreateSerializer
 from drf_extra_fields.fields import Base64ImageField
@@ -188,7 +187,6 @@ class RecipePostSerializer(serializers.ModelSerializer):
         model = Recipe
 
     def validate_ingredients(self, ingredients):
-        print(ingredients)
         if not ingredients:
             raise serializers.ValidationError(
                 'Необходимо выбрать ингредиенты!'
@@ -208,7 +206,6 @@ class RecipePostSerializer(serializers.ModelSerializer):
 
     def add_ingredients_and_tags(self, tags, ingredients, recipe):
         recipe.tags.set(tags)
-        recipe.save()
         instances = [
             IngredientInRecipe(
                 recipe=recipe,
@@ -238,7 +235,6 @@ class RecipePostSerializer(serializers.ModelSerializer):
         instance.IngredientInRecipe.clear()
         instance = self.add_ingredients_and_tags(tags, ingredients, instance)
         super().update(instance, validated_data)
-        instance.save()
         return instance
 
 

@@ -189,18 +189,18 @@ class RecipePostSerializer(serializers.ModelSerializer):
     def validate_ingredients(self, ingredients):
         if not ingredients:
             raise serializers.ValidationError(
-                {'Необходимо выбрать ингредиенты!'}
+                {"errors": 'Необходимо выбрать ингредиенты!'}
             )
 
         for ingredient in ingredients:
             if ingredient['amount'] < 1:
                 raise serializers.ValidationError(
-                    {'Количество не может быть меньше 1!'}
+                    {"errors": 'Количество не может быть меньше 1!'}
                 )
         ids = [ingredient['id'] for ingredient in ingredients]
         if len(ids) != len(set(ids)):
             raise serializers.ValidationError(
-                {'Данный ингредиент уже есть в рецепте!'}
+                {"errors": 'Данный ингредиент уже есть в рецепте!'}
             )
         return ingredients
 

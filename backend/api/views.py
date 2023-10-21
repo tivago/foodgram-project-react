@@ -118,9 +118,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 f'{recipe["amount"]} '
                 f'{recipe["recipe__ingredients__measurement_unit"]}.',
             )
-        response = HttpResponse(page, content_type='text/csv')
+        response = HttpResponse(page, content_type='text/plain')
         response['Content-Disposition'] = (
-            'attachment;filename=shopping_cart.csv'
+            'attachment;filename=shopping_cart.txt'
         )
         return response
 

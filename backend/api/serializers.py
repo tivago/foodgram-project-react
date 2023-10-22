@@ -200,7 +200,7 @@ class RecipePostSerializer(serializers.ModelSerializer):
         ids = [ingredient['id'] for ingredient in ingredients]
         if len(ids) != len(set(ids)):
             raise serializers.ValidationError(
-                [[['Данный ингредиент уже есть в рецепте!']]]
+                [[['Данный ингредиент уже есть в рецепте']]]
             )
         return ingredients
 

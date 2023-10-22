@@ -86,11 +86,147 @@ sudo docker compose -f docker-compose.production.yml exec backend python manage.
 
 Предусмотрен автоматический деплой проекта на сервер с помощью GitHub actions. Для этого описан workflow файл:
 .github/workflows/main.yml
-После деплоя в проекте предусмотрена отправка смс в телеграм чат.
+После деплоя в проекте предусмотрена отправка сообщения в телеграм чат.
 
 ## Документация API :
 находясь в корне проекта, локально, выполните команду docker-compose up.
 http://localhost/api/docs/ — спецификация API. 
+
+## Примеры запросов к API проекта:
+**`POST` | Регистриация пользователя: `http://127.0.0.1:8000/api/users/`**
+
+Request:
+```
+{
+"email": "a@a.ru",
+"id": 5,
+"username": "aaa",
+"first_name": "a",
+"last_name": "a",
+ "is_subscribed": false
+},
+```
+Response:
+```
+{
+"email": "diman.96@mail.ru",
+"id": 4,
+"username": "dima",
+"first_name": "dima",
+"last_name": "dima",
+"is_subscribed": false
+},
+```
+
+**`POST` | Получение ингредиентов: `http://127.0.0.1:8000/api/ingredients/`**
+
+Response:
+```
+HTTP 200 OK
+Allow: GET, HEAD, OPTIONS
+Content-Type: application/json
+Vary: Accept
+
+[
+    {
+        "id": 1,
+        "name": "абрикосовое варенье",
+        "measurement_unit": "г"
+    },
+    {
+        "id": 2,
+        "name": "абрикосовое пюре",
+        "measurement_unit": "г"
+    },
+    {
+        "id": 3,
+        "name": "абрикосовый джем",
+        "measurement_unit": "г"
+    },
+    {
+        "id": 4,
+        "name": "абрикосовый сок",
+        "measurement_unit": "стакан"
+    },
+]
+```
+
+**`GET` | Вывод списка тегов: `http://127.0.0.1:8000/api/tags/`**
+
+Response:
+```
+HTTP 200 OK
+Allow: GET, HEAD, OPTIONS
+Content-Type: application/json
+Vary: Accept
+
+[
+    {
+        "id": 2,
+        "name": "Cold",
+        "color": "#9FD3FF",
+        "slug": "Cold"
+    },
+    {
+        "id": 1,
+        "name": "Hot",
+        "color": "#FF0000",
+        "slug": "Hot"
+    }
+]
+```
+
+**`GET` | Вывод списка тегов: `http://127.0.0.1:8000/api/recipes/`**
+
+Response:
+```
+
+{
+    "count": 9,
+    "next": "http://meowtube.ddns.net/api/recipes/?page=2",
+    "previous": null,
+    "results": [
+        {
+            "id": 9,
+            "tags": [
+                {
+                    "id": 2,
+                    "name": "Cold",
+                    "color": "#9FD3FF",
+                    "slug": "Cold"
+                },
+                {
+                    "id": 1,
+                    "name": "Hot",
+                    "color": "#FF0000",
+                    "slug": "Hot"
+                }
+            ],
+            "author": {
+                "email": "a@a.ru",
+                "id": 5,
+                "username": "aaa",
+                "first_name": "a",
+                "last_name": "a",
+                "is_subscribed": false
+            },
+            "ingredients": [
+                {
+                    "id": 1925,
+                    "name": "фасоль красная",
+                    "measurement_unit": "г",
+                    "amount": 1
+                }
+            ],
+            "is_favorited": false,
+            "is_in_shopping_cart": false,
+            "name": "123",
+            "image": "http://meowtube.ddns.net/backend_media/recipes/fbf0b033-97d5-4876-a768-32761aea9300.jpg",
+            "text": "213",
+            "cooking_time": 123
+        }
+    ]
+}
 
 ## Авторы
 Дмитрий Морозов
